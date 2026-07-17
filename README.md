@@ -18,14 +18,17 @@ instruction → **Gemini** edits the photo → before/after result you can downl
 | Image editing | Google Gemini API (`gemini-2.5-flash-image`) |
 | Hosting | Vercel |
 
-> Built on Node.js 20+. This repo used Node 24. Next.js 16 renames the
-> `middleware` convention to `proxy` — auth runs from [`proxy.ts`](proxy.ts).
+> Requires Node.js 20+ — [`.nvmrc`](.nvmrc) pins Node 24 (`nvm use`). Next.js 16
+> renames the `middleware` convention to `proxy` — auth runs from [`proxy.ts`](proxy.ts).
 
 ## Setup
 
-### 1. Install
+### 1. Node version + install
+
+The repo pins Node 24 via [`.nvmrc`](.nvmrc):
 
 ```bash
+nvm use        # activates Node 24 (nvm install 24 first if missing)
 npm install
 ```
 

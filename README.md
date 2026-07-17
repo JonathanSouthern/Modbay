@@ -1,36 +1,137 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚗 AutoMod Studio
 
-## Getting Started
+AI-powered car customization. Upload a photo of your car, pick your mods (paint,
+rims, body kits, spoilers, tint…), and AI visualizes the build on your actual photo.
 
-First, run the development server:
+**Pipeline:** upload → **Claude** turns your selections into a precise editing
+instruction → **Gemini** edits the photo → before/after result you can download.
+
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js 16 (App Router, TypeScript) |
+| Styling | Tailwind CSS v4 |
+| Auth | Clerk |
+| Rate limiting | Vercel KV / Upstash Redis (10 builds/user/day) |
+| Prompt engineering | Anthropic Claude API |
+| Image editing | Google Gemini API (`gemini-2.5-flash-image`) |
+| Hosting | Vercel |
+
+> Built on Node.js 20+. This repo used Node 24. Next.js 16 renames the
+> `middleware` convention to `proxy` — auth runs from [`proxy.ts`](proxy.ts).
+
+## Setup
+
+### 1. Install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Environment variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy the template and fill in real values:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env.local
+```
 
-## Learn More
+| Variable | Where to get it |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | https://console.anthropic.com |
+| `GEMINI_API_KEY` | https://aistudio.google.com/app/apikey |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | https://dashboard.clerk.com |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Vercel → Storage → create a Redis (Upstash) store |
 
-To learn more about Next.js, take a look at the following resources:
+`.env.local` is **gitignored** and must never be committed. Only `.env.example`
+(placeholders, no secrets) is tracked. See [Secrets & git](#secrets--git) below.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> Optional overrides: `CLAUDE_MODEL` (default `claude-sonnet-4-5`) and
+> `GEMINI_MODEL` (default `gemini-2.5-flash-image`).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 3. Run
 
-## Deploy on Vercel
+```bash
+npm run dev      # http://localhost:3000
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Clerk runs in **keyless mode** without keys, so the app boots for local UI work
+before you add credentials. Generation needs the Anthropic + Gemini keys; rate
+limiting is skipped (allow-all with a warning) until KV is configured.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Start local dev server |
+| `npm run build` | Production build + type check |
+| `npm run lint` | ESLint |
+| `vercel` | Deploy to Vercel from the CLI |
+
+## API
+
+### `POST /api/generate` (auth required)
+
+```jsonc
+// request
+{ "image": "data:image/jpeg;base64,…",
+  "color": { "name": "Midnight black", "hex": "#1a1a1a" },
+  "rim":   { "id": "sport", "label": "Sport spoke" },
+  "mods":  ["Lowered stance", "Tinted windows"],
+  "freeText": "Also add a subtle racing stripe" }
+
+// 200
+{ "result": "data:image/…;base64,…", "remaining": 7 }
+```
+
+| Status | Meaning |
+| --- | --- |
+| 401 | Not signed in |
+| 429 | Daily limit reached (10 builds) |
+| 400 | Missing image or no mods selected |
+| 500 | Claude/Gemini error |
+
+### `GET /api/usage` (auth required)
+
+```json
+{ "used": 3, "limit": 10, "remaining": 7 }
+```
+
+## Project structure
+
+```
+app/
+  layout.tsx                     Root layout + Clerk provider + nav
+  page.tsx                       Home — renders <Studio />
+  sign-in/[[...sign-in]]/        Clerk sign-in
+  sign-up/[[...sign-up]]/        Clerk sign-up
+  api/generate/route.ts          Claude → Gemini pipeline
+  api/usage/route.ts             Current usage
+components/                      Studio, UploadZone, ControlPanel,
+                                 ResultPane, UsageBadge, AuthGate
+lib/
+  prompt.ts                      Claude prompt engineering
+  gemini.ts                      Gemini image editing
+  ratelimit.ts                   KV read/increment/check
+  mods.ts                        Shared colors/rims/mods + types
+  image.ts                       data-URL helpers
+proxy.ts                         Clerk auth (Next 16 "middleware")
+```
+
+## Secrets & git
+
+- `.env` / `.env.*` are gitignored — real keys never enter the repo.
+- `.env.example` is the **only** committed env file and holds placeholders only.
+- Set production values in the Vercel dashboard (Project → Settings → Environment
+  Variables), not in code.
+
+## Deploy
+
+1. Push to GitHub.
+2. Import the repo in Vercel.
+3. Add all env vars in Vercel → Settings → Environment Variables.
+4. Create a Redis (Upstash) store under Storage; copy `KV_REST_API_URL` /
+   `KV_REST_API_TOKEN` into the env vars.
+5. In Clerk, add your production domain and (optionally) enable Google OAuth.
+6. Deploy.

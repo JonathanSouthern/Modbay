@@ -1,4 +1,4 @@
-// Shared domain data + types for AutoMod Studio.
+// Shared domain data + types for Pimp My Vehicle.
 // Imported by both client components (ControlPanel) and the API route.
 
 export type ColorOption = { name: string; hex: string };

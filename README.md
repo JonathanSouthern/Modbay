@@ -1,4 +1,4 @@
-# 🚗 AutoMod Studio
+# 🚗 Pimp My Vehicle
 
 AI-powered car customization. Upload a photo of your car, pick your mods (paint,
 rims, body kits, spoilers, tint…), and AI visualizes the build on your actual photo.
@@ -111,8 +111,8 @@ app/
   sign-up/[[...sign-up]]/        Clerk sign-up
   api/generate/route.ts          Claude → Gemini pipeline
   api/usage/route.ts             Current usage
-components/                      Studio, UploadZone, ControlPanel,
-                                 ResultPane, UsageBadge, AuthGate
+components/                      Studio, Stage, CompareSlider, ControlPanel,
+                                 BuildButton, UsageBadge, AuthGate
 lib/
   prompt.ts                      Claude prompt engineering
   gemini.ts                      Gemini image editing

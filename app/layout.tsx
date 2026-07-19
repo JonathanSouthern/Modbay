@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Barlow, Barlow_Condensed, IBM_Plex_Mono } from "next/font/google";
 import {
   ClerkProvider,
   Show,
@@ -10,20 +10,28 @@ import {
 import Link from "next/link";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const barlow = Barlow({
+  variable: "--font-barlow",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-barlow-condensed",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
-  title: "AutoMod Studio — AI car customization",
+  title: "AutoMod Studio — see mods on your own car",
   description:
-    "Upload a photo of your car and visualize custom mods — paint, rims, body kits, and more — with AI.",
+    "Upload a photo of your car, spec the build — paint, rims, body kit — and see it rendered on your actual car.",
 };
 
 export default function RootLayout({
@@ -35,31 +43,29 @@ export default function RootLayout({
     <ClerkProvider>
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${barlow.variable} ${barlowCondensed.variable} ${plexMono.variable} h-full`}
       >
-        <body className="min-h-full flex flex-col bg-background text-foreground">
-          <header className="bg-nav text-white">
-            <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-              <Link
-                href="/"
-                className="flex items-center gap-2 font-semibold tracking-tight"
-              >
-                <span aria-hidden className="text-xl">
-                  🚗
-                </span>
-                <span className="text-lg">
-                  AutoMod<span className="text-accent"> Studio</span>
+        <body className="flex min-h-full flex-col bg-background text-foreground">
+          <header className="border-b border-line">
+            <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+              <Link href="/" className="flex items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className="block h-3.5 w-3.5 rounded-[2px] bg-accent"
+                />
+                <span className="font-display text-lg font-semibold uppercase tracking-[0.18em]">
+                  AutoMod <span className="text-muted">Studio</span>
                 </span>
               </Link>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Show when="signed-out">
                   <SignInButton mode="modal">
-                    <button className="rounded-md px-3 py-1.5 text-sm font-medium text-white/80 transition hover:text-white">
+                    <button className="rounded px-3 py-1.5 text-sm font-medium text-muted transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                       Sign in
                     </button>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <button className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:bg-accent-hover">
+                    <button className="rounded bg-accent px-3.5 py-1.5 text-sm font-semibold text-stage transition hover:bg-accent-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                       Sign up
                     </button>
                   </SignUpButton>

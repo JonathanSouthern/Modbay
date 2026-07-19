@@ -5,28 +5,36 @@ type Props = {
   limit: number;
 };
 
+/**
+ * Fuel-gauge usage meter: one segment per build, drains as you use them.
+ */
 export default function UsageBadge({ remaining, limit }: Props) {
   if (remaining === null) return null;
 
-  const used = Math.max(0, limit - remaining);
   const low = remaining <= 2;
 
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
-        low
-          ? "border-amber-300 bg-amber-50 text-amber-700"
-          : "border-border bg-card text-muted"
-      }`}
-      title="Free builds reset daily"
+    <div
+      className="flex items-center gap-2.5"
+      title="Free builds — resets daily"
     >
-      <span
-        aria-hidden
-        className={`h-1.5 w-1.5 rounded-full ${
-          low ? "bg-amber-500" : "bg-accent"
-        }`}
-      />
-      {used} / {limit} builds today
-    </span>
+      <div className="flex items-end gap-[3px]" aria-hidden>
+        {Array.from({ length: limit }, (_, i) => (
+          <span
+            key={i}
+            className={`h-3 w-1.5 rounded-[1px] ${
+              i < remaining
+                ? low
+                  ? "bg-danger"
+                  : "bg-accent"
+                : "bg-line-strong"
+            }`}
+          />
+        ))}
+      </div>
+      <span className="font-mono text-[11px] tracking-wide text-muted">
+        {remaining}/{limit} builds left
+      </span>
+    </div>
   );
 }

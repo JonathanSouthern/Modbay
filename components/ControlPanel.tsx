@@ -1,5 +1,6 @@
 "use client";
 
+import BuildButton from "@/components/BuildButton";
 import {
   COLORS,
   RIMS,
@@ -22,20 +23,33 @@ type Props = {
   canBuild: boolean;
 };
 
+/**
+ * Spec-sheet section: an uppercase label on the left, the current
+ * selection echoed in mono on the right, hairline rule below.
+ */
 function Section({
-  title,
+  label,
+  value,
   children,
 }: {
-  title: string;
+  label: string;
+  value?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-2.5">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
-        {title}
-      </h3>
+    <section className="border-b border-line px-4 py-4 last:border-b-0">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h3 className="font-display text-xs font-semibold uppercase tracking-[0.22em] text-muted">
+          {label}
+        </h3>
+        {value && (
+          <span className="truncate font-mono text-[11px] text-foreground">
+            {value}
+          </span>
+        )}
+      </div>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -53,9 +67,9 @@ export default function ControlPanel({
   canBuild,
 }: Props) {
   return (
-    <div className="space-y-6 rounded-xl border border-border bg-card p-5 shadow-sm">
-      <Section title="Body color">
-        <div className="grid grid-cols-5 gap-2.5">
+    <div className="overflow-hidden rounded-lg border border-line bg-panel">
+      <Section label="Paint" value={color?.name ?? "—"}>
+        <div className="flex flex-wrap gap-2.5">
           {COLORS.map((c) => {
             const active = color?.name === c.name;
             return (
@@ -64,23 +78,22 @@ export default function ControlPanel({
                 type="button"
                 title={c.name}
                 onClick={() => onColor(c)}
-                className={`relative aspect-square rounded-full border shadow-sm transition ${
-                  active
-                    ? "ring-2 ring-accent ring-offset-2"
-                    : "border-border hover:scale-105"
-                }`}
-                style={{ backgroundColor: c.hex }}
                 aria-pressed={active}
                 aria-label={c.name}
+                className={`h-9 w-9 rounded-full border border-white/10 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  active
+                    ? "ring-2 ring-accent ring-offset-2 ring-offset-panel"
+                    : "hover:scale-105"
+                }`}
+                style={{ backgroundColor: c.hex }}
               />
             );
           })}
         </div>
-        {color && <p className="text-xs text-muted">{color.name}</p>}
       </Section>
 
-      <Section title="Rim style">
-        <div className="flex flex-wrap gap-2">
+      <Section label="Rims" value={rim?.label ?? "—"}>
+        <div className="grid grid-cols-2 gap-1.5">
           {RIMS.map((r) => {
             const active = rim?.id === r.id;
             return (
@@ -89,10 +102,10 @@ export default function ControlPanel({
                 type="button"
                 onClick={() => onRim(r)}
                 aria-pressed={active}
-                className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+                className={`rounded border px-3 py-2 text-left text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   active
-                    ? "border-accent bg-accent text-white"
-                    : "border-border bg-background text-foreground hover:border-accent/60"
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-line-strong text-muted hover:border-line-strong hover:text-foreground"
                 }`}
               >
                 {r.label}
@@ -102,8 +115,11 @@ export default function ControlPanel({
         </div>
       </Section>
 
-      <Section title="Mods">
-        <div className="flex flex-wrap gap-2">
+      <Section
+        label="Mods"
+        value={mods.length > 0 ? `${mods.length} selected` : "—"}
+      >
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
           {MODS.map((m) => {
             const active = mods.includes(m);
             return (
@@ -112,69 +128,63 @@ export default function ControlPanel({
                 type="button"
                 onClick={() => onToggleMod(m)}
                 aria-pressed={active}
-                className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                  active
-                    ? "border-accent bg-accent/10 text-accent"
-                    : "border-border bg-background text-foreground hover:border-accent/60"
-                }`}
+                className="group flex items-center gap-2.5 rounded px-1.5 py-1.5 text-left text-sm transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
               >
-                {active ? "✓ " : ""}
-                {m}
+                <span
+                  aria-hidden
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border transition ${
+                    active
+                      ? "border-accent bg-accent text-stage"
+                      : "border-line-strong group-hover:border-muted"
+                  }`}
+                >
+                  {active && (
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </span>
+                <span
+                  className={
+                    active ? "text-foreground" : "text-muted group-hover:text-foreground"
+                  }
+                >
+                  {m}
+                </span>
               </button>
             );
           })}
         </div>
       </Section>
 
-      <Section title="Anything else?">
+      <Section label="Notes">
         <textarea
           value={freeText}
           onChange={(e) => onFreeText(e.target.value)}
-          rows={3}
-          placeholder="e.g. Also add a subtle racing stripe down the center"
-          className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+          rows={2}
+          placeholder="Anything else — e.g. subtle center racing stripe"
+          className="w-full resize-none rounded border border-line-strong bg-stage px-3 py-2 text-sm text-foreground placeholder:text-muted/70 transition focus:border-accent focus:outline-none"
         />
       </Section>
 
-      <button
-        type="button"
-        onClick={onBuild}
-        disabled={isLoading || !canBuild}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {isLoading ? (
-          <>
-            <svg
-              className="h-4 w-4 animate-spin"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
-              />
-            </svg>
-            Building…
-          </>
-        ) : (
-          <>✨ Build it</>
+      {/* Rail CTA — hidden on mobile, where the sticky bar takes over */}
+      <div className="hidden space-y-2 px-4 py-4 lg:block">
+        <BuildButton onBuild={onBuild} isLoading={isLoading} canBuild={canBuild} />
+        {!canBuild && (
+          <p className="text-center font-mono text-[11px] text-muted">
+            Add a photo and pick at least one mod
+          </p>
         )}
-      </button>
-      {!canBuild && (
-        <p className="-mt-3 text-center text-xs text-muted">
-          Upload a photo and pick at least one mod to start.
-        </p>
-      )}
+      </div>
     </div>
   );
 }

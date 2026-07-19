@@ -79,11 +79,16 @@ limiting is skipped (allow-all with a warning) until KV is configured.
 ```jsonc
 // request
 { "image": "data:image/jpeg;base64,…",
-  "color":  { "name": "Midnight black", "hex": "#1a1a1a" },
-  "finish": { "id": "matte", "label": "Matte" },
-  "rim":    { "id": "sport", "label": "Sport spoke" },
-  "tint":   { "id": "dark", "label": "Dark", "vlt": 20 },
-  "mods":   ["Lowered stance", "Diffuser"],
+  "color":      { "name": "Midnight black", "hex": "#1a1a1a" },
+  "finish":     { "id": "matte", "label": "Matte" },
+  "rim":        { "id": "sport", "label": "Sport spoke" },
+  "rimColor":   { "id": "black", "label": "Gloss black", "hex": "#0b0b0d" },
+  "rimSize":    { "id": "20", "label": "20″" },
+  "stance":     { "id": "lowered", "label": "Lowered" },
+  "tint":       { "id": "dark", "label": "Dark", "vlt": 20 },
+  "headlights": { "id": "smoked", "label": "Smoked" },
+  "underglow":  { "id": "purple", "label": "Purple", "hex": "#a855f7" },
+  "mods":       ["Diffuser"],
   "freeText": "Also add a subtle racing stripe" }
 
 // 200

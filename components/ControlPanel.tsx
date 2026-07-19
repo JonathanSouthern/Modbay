@@ -3,33 +3,25 @@
 import BuildButton from "@/components/BuildButton";
 import {
   COLORS,
-  RIMS,
-  MODS,
   FINISHES,
+  RIMS,
+  RIM_COLORS,
+  RIM_SIZES,
+  STANCES,
   TINTS,
+  HEADLIGHTS,
+  UNDERGLOWS,
+  MODS,
   PRESETS,
-  type ColorOption,
-  type RimOption,
-  type FinishOption,
-  type TintOption,
+  type ModOptions,
   type PresetOption,
 } from "@/lib/mods";
 
 type Props = {
+  spec: ModOptions;
+  onPatch: (patch: Partial<ModOptions>) => void;
   presetId: string | null;
   onPreset: (p: PresetOption) => void;
-  color: ColorOption | null;
-  onColor: (c: ColorOption) => void;
-  finish: FinishOption | null;
-  onFinish: (f: FinishOption) => void;
-  rim: RimOption | null;
-  onRim: (r: RimOption) => void;
-  tint: TintOption | null;
-  onTint: (t: TintOption) => void;
-  mods: string[];
-  onToggleMod: (m: string) => void;
-  freeText: string;
-  onFreeText: (v: string) => void;
   onBuild: () => void;
   isLoading: boolean;
   canBuild: boolean;
@@ -65,20 +57,32 @@ function Section({
   );
 }
 
-/** Small toggle chip used for finishes. */
+/** Sub-label inside a section (e.g. "Color" under Rims). */
+function SubLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-1.5 mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-muted/80 first:mt-0">
+      {children}
+    </p>
+  );
+}
+
+/** Small toggle chip for single-select options. */
 function Chip({
   label,
   active,
   onClick,
+  title,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  title?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      title={title}
       aria-pressed={active}
       className={`rounded border px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         active
@@ -91,29 +95,92 @@ function Chip({
   );
 }
 
+/** Round color swatch with active ring. */
+function Swatch({
+  hex,
+  label,
+  active,
+  onClick,
+  size = "h-9 w-9",
+  glow = false,
+}: {
+  hex: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  size?: string;
+  glow?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+      className={`${size} rounded-full border border-white/10 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+        active
+          ? "ring-2 ring-accent ring-offset-2 ring-offset-panel"
+          : "hover:scale-105"
+      }`}
+      style={{
+        backgroundColor: hex,
+        ...(glow ? { boxShadow: `0 0 ${active ? 12 : 6}px ${hex}` } : {}),
+      }}
+    />
+  );
+}
+
 export default function ControlPanel({
+  spec,
+  onPatch,
   presetId,
   onPreset,
-  color,
-  onColor,
-  finish,
-  onFinish,
-  rim,
-  onRim,
-  tint,
-  onTint,
-  mods,
-  onToggleMod,
-  freeText,
-  onFreeText,
   onBuild,
   isLoading,
   canBuild,
 }: Props) {
+  const {
+    color,
+    finish,
+    rim,
+    rimColor,
+    rimSize,
+    stance,
+    tint,
+    headlights,
+    underglow,
+    mods,
+    freeText,
+  } = spec;
+
+  // Every single-select control toggles: tap the active option to clear it.
+  const toggle = <K extends keyof ModOptions>(
+    key: K,
+    current: { id?: string; name?: string } | null,
+    next: ModOptions[K] & { id?: string; name?: string }
+  ) => {
+    const same =
+      current !== null &&
+      (current.id !== undefined
+        ? current.id === next.id
+        : current.name === next.name);
+    onPatch({ [key]: same ? null : next } as Partial<ModOptions>);
+  };
+
   const paintValue =
     color && finish
       ? `${color.name} · ${finish.label}`
       : color?.name ?? finish?.label ?? "—";
+
+  const rimValue =
+    [rim?.label, rimColor?.label, rimSize?.label].filter(Boolean).join(" · ") ||
+    "—";
+
+  const lightsValue =
+    [headlights?.label, underglow ? `${underglow.label} glow` : null]
+      .filter(Boolean)
+      .join(" · ") || "—";
 
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-panel">
@@ -155,39 +222,31 @@ export default function ControlPanel({
 
       <Section label="Paint" value={paintValue}>
         <div className="flex flex-wrap gap-2.5">
-          {COLORS.map((c) => {
-            const active = color?.name === c.name;
-            return (
-              <button
-                key={c.name}
-                type="button"
-                title={c.name}
-                onClick={() => onColor(c)}
-                aria-pressed={active}
-                aria-label={c.name}
-                className={`h-9 w-9 rounded-full border border-white/10 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
-                  active
-                    ? "ring-2 ring-accent ring-offset-2 ring-offset-panel"
-                    : "hover:scale-105"
-                }`}
-                style={{ backgroundColor: c.hex }}
-              />
-            );
-          })}
+          {COLORS.map((c) => (
+            <Swatch
+              key={c.name}
+              hex={c.hex}
+              label={c.name}
+              active={color?.name === c.name}
+              onClick={() => toggle("color", color, c)}
+            />
+          ))}
         </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <SubLabel>Finish</SubLabel>
+        <div className="flex flex-wrap gap-1.5">
           {FINISHES.map((f) => (
             <Chip
               key={f.id}
               label={f.label}
               active={finish?.id === f.id}
-              onClick={() => onFinish(f)}
+              onClick={() => toggle("finish", finish, f)}
             />
           ))}
         </div>
       </Section>
 
-      <Section label="Rims" value={rim?.label ?? "—"}>
+      <Section label="Rims" value={rimValue}>
+        <SubLabel>Style</SubLabel>
         <div className="grid grid-cols-2 gap-1.5">
           {RIMS.map((r) => {
             const active = rim?.id === r.id;
@@ -195,7 +254,7 @@ export default function ControlPanel({
               <button
                 key={r.id}
                 type="button"
-                onClick={() => onRim(r)}
+                onClick={() => toggle("rim", rim, r)}
                 aria-pressed={active}
                 className={`rounded border px-3 py-2 text-left text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   active
@@ -207,6 +266,43 @@ export default function ControlPanel({
               </button>
             );
           })}
+        </div>
+        <SubLabel>Color</SubLabel>
+        <div className="flex flex-wrap gap-2">
+          {RIM_COLORS.map((c) => (
+            <Swatch
+              key={c.id}
+              hex={c.hex}
+              label={c.label}
+              active={rimColor?.id === c.id}
+              onClick={() => toggle("rimColor", rimColor, c)}
+              size="h-7 w-7"
+            />
+          ))}
+        </div>
+        <SubLabel>Size</SubLabel>
+        <div className="flex flex-wrap gap-1.5">
+          {RIM_SIZES.map((s) => (
+            <Chip
+              key={s.id}
+              label={s.label}
+              active={rimSize?.id === s.id}
+              onClick={() => toggle("rimSize", rimSize, s)}
+            />
+          ))}
+        </div>
+      </Section>
+
+      <Section label="Stance" value={stance?.label ?? "—"}>
+        <div className="grid grid-cols-3 gap-1.5">
+          {STANCES.map((s) => (
+            <Chip
+              key={s.id}
+              label={s.label}
+              active={stance?.id === s.id}
+              onClick={() => toggle("stance", stance, s)}
+            />
+          ))}
         </div>
       </Section>
 
@@ -221,7 +317,7 @@ export default function ControlPanel({
               <button
                 key={t.id}
                 type="button"
-                onClick={() => onTint(t)}
+                onClick={() => toggle("tint", tint, t)}
                 aria-pressed={active}
                 title={`${t.vlt}% visible light transmission`}
                 className={`flex flex-col items-center gap-1.5 rounded border px-2 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
@@ -251,6 +347,34 @@ export default function ControlPanel({
         </div>
       </Section>
 
+      <Section label="Lights" value={lightsValue}>
+        <SubLabel>Headlights</SubLabel>
+        <div className="flex flex-wrap gap-1.5">
+          {HEADLIGHTS.map((h) => (
+            <Chip
+              key={h.id}
+              label={h.label}
+              active={headlights?.id === h.id}
+              onClick={() => toggle("headlights", headlights, h)}
+            />
+          ))}
+        </div>
+        <SubLabel>Underglow</SubLabel>
+        <div className="flex flex-wrap gap-2">
+          {UNDERGLOWS.map((u) => (
+            <Swatch
+              key={u.id}
+              hex={u.hex}
+              label={u.label}
+              active={underglow?.id === u.id}
+              onClick={() => toggle("underglow", underglow, u)}
+              size="h-7 w-7"
+              glow
+            />
+          ))}
+        </div>
+      </Section>
+
       <Section
         label="Mods"
         value={mods.length > 0 ? `${mods.length} selected` : "—"}
@@ -262,7 +386,13 @@ export default function ControlPanel({
               <button
                 key={m}
                 type="button"
-                onClick={() => onToggleMod(m)}
+                onClick={() =>
+                  onPatch({
+                    mods: active
+                      ? mods.filter((x) => x !== m)
+                      : [...mods, m],
+                  })
+                }
                 aria-pressed={active}
                 className="group flex items-center gap-2.5 rounded px-1.5 py-1.5 text-left text-sm transition focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
               >
@@ -307,7 +437,7 @@ export default function ControlPanel({
       <Section label="Notes">
         <textarea
           value={freeText}
-          onChange={(e) => onFreeText(e.target.value)}
+          onChange={(e) => onPatch({ freeText: e.target.value })}
           rows={2}
           placeholder="Anything else — e.g. subtle center racing stripe"
           className="w-full resize-none rounded border border-line-strong bg-stage px-3 py-2 text-sm text-foreground placeholder:text-muted/70 transition focus:border-accent focus:outline-none"

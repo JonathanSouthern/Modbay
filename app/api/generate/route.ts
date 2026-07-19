@@ -4,7 +4,11 @@ import { buildGeminiPrompt } from "@/lib/prompt";
 import { editCarImage } from "@/lib/gemini";
 import { checkAndIncrement } from "@/lib/ratelimit";
 import { parseDataUrl, toDataUrl, base64ByteLength } from "@/lib/image";
-import { MAX_IMAGE_BYTES, type GenerateRequest } from "@/lib/mods";
+import {
+  MAX_IMAGE_BYTES,
+  type GenerateRequest,
+  type ModOptions,
+} from "@/lib/mods";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -24,27 +28,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const {
-    image,
-    color = null,
-    finish = null,
-    rim = null,
-    tint = null,
-    mods = [],
-    freeText = "",
-  } = body;
+  const { image } = body;
+  const options: ModOptions = {
+    color: body.color ?? null,
+    finish: body.finish ?? null,
+    rim: body.rim ?? null,
+    rimColor: body.rimColor ?? null,
+    rimSize: body.rimSize ?? null,
+    stance: body.stance ?? null,
+    tint: body.tint ?? null,
+    headlights: body.headlights ?? null,
+    underglow: body.underglow ?? null,
+    mods: body.mods ?? [],
+    freeText: body.freeText ?? "",
+  };
 
   if (!image) {
     return NextResponse.json({ error: "Missing image" }, { status: 400 });
   }
 
-  const hasSelections =
-    Boolean(color) ||
-    Boolean(finish) ||
-    Boolean(rim) ||
-    Boolean(tint) ||
-    mods.length > 0 ||
-    freeText.trim().length > 0;
+  const hasSelections = Object.values(options).some((v) =>
+    Array.isArray(v)
+      ? v.length > 0
+      : typeof v === "string"
+        ? v.trim().length > 0
+        : v !== null
+  );
   if (!hasSelections) {
     return NextResponse.json(
       { error: "Select at least one modification" },
@@ -76,14 +85,7 @@ export async function POST(req: Request) {
 
   // 4 & 5. Claude → editing prompt → Gemini → edited image.
   try {
-    const prompt = await buildGeminiPrompt(image, {
-      color,
-      finish,
-      rim,
-      tint,
-      mods,
-      freeText,
-    });
+    const prompt = await buildGeminiPrompt(image, options);
     const edited = await editCarImage(parsed.base64, parsed.mimeType, prompt);
 
     // 6. Return the result + remaining count.

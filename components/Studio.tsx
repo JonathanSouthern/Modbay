@@ -9,10 +9,8 @@ import AuthGate from "@/components/AuthGate";
 import BuildButton from "@/components/BuildButton";
 import {
   DAILY_LIMIT,
-  type ColorOption,
-  type RimOption,
-  type FinishOption,
-  type TintOption,
+  EMPTY_OPTIONS,
+  type ModOptions,
   type PresetOption,
 } from "@/lib/mods";
 
@@ -27,17 +25,22 @@ const LOADING_STAGES: { at: number; label: string }[] = [
   { at: 20_000, label: "Rendering the final shot" },
 ];
 
+function specHasSelections(spec: ModOptions): boolean {
+  return Object.values(spec).some((v) =>
+    Array.isArray(v)
+      ? v.length > 0
+      : typeof v === "string"
+        ? v.trim().length > 0
+        : v !== null
+  );
+}
+
 export default function Studio() {
   const { isSignedIn, isLoaded } = useUser();
 
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
-  const [color, setColor] = useState<ColorOption | null>(null);
-  const [finish, setFinish] = useState<FinishOption | null>(null);
-  const [rim, setRim] = useState<RimOption | null>(null);
-  const [tint, setTint] = useState<TintOption | null>(null);
-  const [mods, setMods] = useState<string[]>([]);
-  const [freeText, setFreeText] = useState("");
+  const [spec, setSpec] = useState<ModOptions>(EMPTY_OPTIONS);
   const [presetId, setPresetId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingLabel, setLoadingLabel] = useState(LOADING_STAGES[0].label);
@@ -71,56 +74,18 @@ export default function Studio() {
   }, [isLoading]);
 
   // Manual edits to any control turn the spec back into a "Custom" build.
-  const pickColor = useCallback((c: ColorOption) => {
-    setColor(c);
-    setPresetId(null);
-  }, []);
-
-  const pickFinish = useCallback((f: FinishOption) => {
-    setFinish((prev) => (prev?.id === f.id ? null : f)); // tap again to clear
-    setPresetId(null);
-  }, []);
-
-  const pickRim = useCallback((r: RimOption) => {
-    setRim(r);
-    setPresetId(null);
-  }, []);
-
-  const pickTint = useCallback((t: TintOption) => {
-    setTint((prev) => (prev?.id === t.id ? null : t)); // tap again to clear
-    setPresetId(null);
-  }, []);
-
-  const toggleMod = useCallback((m: string) => {
-    setMods((prev) =>
-      prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]
-    );
-    setPresetId(null);
-  }, []);
-
-  const editFreeText = useCallback((v: string) => {
-    setFreeText(v);
+  const patchSpec = useCallback((patch: Partial<ModOptions>) => {
+    setSpec((prev) => ({ ...prev, ...patch }));
     setPresetId(null);
   }, []);
 
   // A preset fills the whole sheet at once.
   const applyPreset = useCallback((p: PresetOption) => {
-    setColor(p.spec.color);
-    setFinish(p.spec.finish);
-    setRim(p.spec.rim);
-    setTint(p.spec.tint);
-    setMods(p.spec.mods);
-    setFreeText(p.spec.freeText);
+    setSpec(p.spec);
     setPresetId(p.id);
   }, []);
 
-  const hasSelections =
-    Boolean(color) ||
-    Boolean(finish) ||
-    Boolean(rim) ||
-    Boolean(tint) ||
-    mods.length > 0 ||
-    freeText.trim() !== "";
+  const hasSelections = specHasSelections(spec);
   const canBuild = Boolean(uploadedImage) && hasSelections;
 
   const handleImage = useCallback((dataUrl: string) => {
@@ -150,15 +115,7 @@ export default function Studio() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: uploadedImage,
-          color,
-          finish,
-          rim,
-          tint,
-          mods,
-          freeText,
-        }),
+        body: JSON.stringify({ image: uploadedImage, ...spec }),
       });
 
       if (res.status === 401) {
@@ -184,17 +141,7 @@ export default function Studio() {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    uploadedImage,
-    hasSelections,
-    isSignedIn,
-    color,
-    finish,
-    rim,
-    tint,
-    mods,
-    freeText,
-  ]);
+  }, [uploadedImage, hasSelections, isSignedIn, spec]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-28 pt-8 sm:px-6 lg:pb-12">
@@ -231,20 +178,10 @@ export default function Studio() {
 
         <div className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto">
           <ControlPanel
+            spec={spec}
+            onPatch={patchSpec}
             presetId={presetId}
             onPreset={applyPreset}
-            color={color}
-            onColor={pickColor}
-            finish={finish}
-            onFinish={pickFinish}
-            rim={rim}
-            onRim={pickRim}
-            tint={tint}
-            onTint={pickTint}
-            mods={mods}
-            onToggleMod={toggleMod}
-            freeText={freeText}
-            onFreeText={editFreeText}
             onBuild={build}
             isLoading={isLoading}
             canBuild={canBuild}

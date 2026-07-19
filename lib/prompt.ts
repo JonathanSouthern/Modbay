@@ -1,6 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { parseDataUrl } from "@/lib/image";
-import type { ModOptions } from "@/lib/mods";
+import {
+  HEADLIGHT_PROMPTS,
+  STANCE_PROMPTS,
+  type ModOptions,
+} from "@/lib/mods";
 
 // The doc specified "claude-sonnet-4-6"; that isn't a valid public model id,
 // so we default to a current Sonnet and allow an env override.
@@ -26,12 +30,40 @@ function describeSelections(options: ModOptions): string {
       `Paint finish: ${options.finish.label.toLowerCase()} (keep the current color)`
     );
   }
-  if (options.rim) {
-    lines.push(`Rim style: ${options.rim.label}`);
+  if (options.rim || options.rimColor || options.rimSize) {
+    const parts: string[] = [];
+    if (options.rim) parts.push(`${options.rim.label} style`);
+    if (options.rimColor)
+      parts.push(
+        `${options.rimColor.label.toLowerCase()} color (${options.rimColor.hex})`
+      );
+    if (options.rimSize) parts.push(`${options.rimSize.id} inch`);
+    lines.push(`Rims: ${parts.join(", ")}`);
+  }
+  if (options.stance) {
+    lines.push(
+      `Stance: ${options.stance.label} (${
+        STANCE_PROMPTS[options.stance.id] ?? options.stance.label
+      })`
+    );
   }
   if (options.tint) {
     lines.push(
       `Window tint: ${options.tint.label} (${options.tint.vlt}% visible light transmission)`
+    );
+  }
+  if (options.headlights) {
+    lines.push(
+      `Lights: ${
+        HEADLIGHT_PROMPTS[options.headlights.id] ?? options.headlights.label
+      }`
+    );
+  }
+  if (options.underglow) {
+    lines.push(
+      `Neon underglow: ${options.underglow.label.toLowerCase()} (${
+        options.underglow.hex
+      }) glow beneath the car, casting light on the ground`
     );
   }
   if (options.mods.length > 0) {

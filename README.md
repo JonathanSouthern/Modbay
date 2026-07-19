@@ -79,9 +79,11 @@ limiting is skipped (allow-all with a warning) until KV is configured.
 ```jsonc
 // request
 { "image": "data:image/jpeg;base64,…",
-  "color": { "name": "Midnight black", "hex": "#1a1a1a" },
-  "rim":   { "id": "sport", "label": "Sport spoke" },
-  "mods":  ["Lowered stance", "Tinted windows"],
+  "color":  { "name": "Midnight black", "hex": "#1a1a1a" },
+  "finish": { "id": "matte", "label": "Matte" },
+  "rim":    { "id": "sport", "label": "Sport spoke" },
+  "tint":   { "id": "dark", "label": "Dark", "vlt": 20 },
+  "mods":   ["Lowered stance", "Diffuser"],
   "freeText": "Also add a subtle racing stripe" }
 
 // 200

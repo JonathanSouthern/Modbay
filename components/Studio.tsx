@@ -11,6 +11,9 @@ import {
   DAILY_LIMIT,
   type ColorOption,
   type RimOption,
+  type FinishOption,
+  type TintOption,
+  type PresetOption,
 } from "@/lib/mods";
 
 type Gate = "signin" | "limit" | null;
@@ -30,9 +33,12 @@ export default function Studio() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [color, setColor] = useState<ColorOption | null>(null);
+  const [finish, setFinish] = useState<FinishOption | null>(null);
   const [rim, setRim] = useState<RimOption | null>(null);
+  const [tint, setTint] = useState<TintOption | null>(null);
   const [mods, setMods] = useState<string[]>([]);
   const [freeText, setFreeText] = useState("");
+  const [presetId, setPresetId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingLabel, setLoadingLabel] = useState(LOADING_STAGES[0].label);
   const [remaining, setRemaining] = useState<number | null>(null);
@@ -64,14 +70,57 @@ export default function Studio() {
     return () => timers.forEach(clearTimeout);
   }, [isLoading]);
 
+  // Manual edits to any control turn the spec back into a "Custom" build.
+  const pickColor = useCallback((c: ColorOption) => {
+    setColor(c);
+    setPresetId(null);
+  }, []);
+
+  const pickFinish = useCallback((f: FinishOption) => {
+    setFinish((prev) => (prev?.id === f.id ? null : f)); // tap again to clear
+    setPresetId(null);
+  }, []);
+
+  const pickRim = useCallback((r: RimOption) => {
+    setRim(r);
+    setPresetId(null);
+  }, []);
+
+  const pickTint = useCallback((t: TintOption) => {
+    setTint((prev) => (prev?.id === t.id ? null : t)); // tap again to clear
+    setPresetId(null);
+  }, []);
+
   const toggleMod = useCallback((m: string) => {
     setMods((prev) =>
       prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]
     );
+    setPresetId(null);
+  }, []);
+
+  const editFreeText = useCallback((v: string) => {
+    setFreeText(v);
+    setPresetId(null);
+  }, []);
+
+  // A preset fills the whole sheet at once.
+  const applyPreset = useCallback((p: PresetOption) => {
+    setColor(p.spec.color);
+    setFinish(p.spec.finish);
+    setRim(p.spec.rim);
+    setTint(p.spec.tint);
+    setMods(p.spec.mods);
+    setFreeText(p.spec.freeText);
+    setPresetId(p.id);
   }, []);
 
   const hasSelections =
-    Boolean(color) || Boolean(rim) || mods.length > 0 || freeText.trim() !== "";
+    Boolean(color) ||
+    Boolean(finish) ||
+    Boolean(rim) ||
+    Boolean(tint) ||
+    mods.length > 0 ||
+    freeText.trim() !== "";
   const canBuild = Boolean(uploadedImage) && hasSelections;
 
   const handleImage = useCallback((dataUrl: string) => {
@@ -104,7 +153,9 @@ export default function Studio() {
         body: JSON.stringify({
           image: uploadedImage,
           color,
+          finish,
           rim,
+          tint,
           mods,
           freeText,
         }),
@@ -133,7 +184,17 @@ export default function Studio() {
     } finally {
       setIsLoading(false);
     }
-  }, [uploadedImage, hasSelections, isSignedIn, color, rim, mods, freeText]);
+  }, [
+    uploadedImage,
+    hasSelections,
+    isSignedIn,
+    color,
+    finish,
+    rim,
+    tint,
+    mods,
+    freeText,
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-28 pt-8 sm:px-6 lg:pb-12">
@@ -168,16 +229,22 @@ export default function Studio() {
           onError={setError}
         />
 
-        <div className="lg:sticky lg:top-6 lg:self-start">
+        <div className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto">
           <ControlPanel
+            presetId={presetId}
+            onPreset={applyPreset}
             color={color}
-            onColor={setColor}
+            onColor={pickColor}
+            finish={finish}
+            onFinish={pickFinish}
             rim={rim}
-            onRim={setRim}
+            onRim={pickRim}
+            tint={tint}
+            onTint={pickTint}
             mods={mods}
             onToggleMod={toggleMod}
             freeText={freeText}
-            onFreeText={setFreeText}
+            onFreeText={editFreeText}
             onBuild={build}
             isLoading={isLoading}
             canBuild={canBuild}

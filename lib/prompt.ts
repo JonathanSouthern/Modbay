@@ -19,10 +19,20 @@ Do not include any preamble, explanation, or commentary. Output only the instruc
 function describeSelections(options: ModOptions): string {
   const lines: string[] = [];
   if (options.color) {
-    lines.push(`Paint color: ${options.color.name} (${options.color.hex})`);
+    const finish = options.finish ? ` in a ${options.finish.label.toLowerCase()} finish` : "";
+    lines.push(`Paint color: ${options.color.name} (${options.color.hex})${finish}`);
+  } else if (options.finish) {
+    lines.push(
+      `Paint finish: ${options.finish.label.toLowerCase()} (keep the current color)`
+    );
   }
   if (options.rim) {
     lines.push(`Rim style: ${options.rim.label}`);
+  }
+  if (options.tint) {
+    lines.push(
+      `Window tint: ${options.tint.label} (${options.tint.vlt}% visible light transmission)`
+    );
   }
   if (options.mods.length > 0) {
     lines.push(`Modifications: ${options.mods.join(", ")}`);

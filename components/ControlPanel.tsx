@@ -5,15 +5,27 @@ import {
   COLORS,
   RIMS,
   MODS,
+  FINISHES,
+  TINTS,
+  PRESETS,
   type ColorOption,
   type RimOption,
+  type FinishOption,
+  type TintOption,
+  type PresetOption,
 } from "@/lib/mods";
 
 type Props = {
+  presetId: string | null;
+  onPreset: (p: PresetOption) => void;
   color: ColorOption | null;
   onColor: (c: ColorOption) => void;
+  finish: FinishOption | null;
+  onFinish: (f: FinishOption) => void;
   rim: RimOption | null;
   onRim: (r: RimOption) => void;
+  tint: TintOption | null;
+  onTint: (t: TintOption) => void;
   mods: string[];
   onToggleMod: (m: string) => void;
   freeText: string;
@@ -53,11 +65,43 @@ function Section({
   );
 }
 
+/** Small toggle chip used for finishes. */
+function Chip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded border px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+        active
+          ? "border-accent bg-accent/10 text-accent"
+          : "border-line-strong text-muted hover:text-foreground"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 export default function ControlPanel({
+  presetId,
+  onPreset,
   color,
   onColor,
+  finish,
+  onFinish,
   rim,
   onRim,
+  tint,
+  onTint,
   mods,
   onToggleMod,
   freeText,
@@ -66,9 +110,50 @@ export default function ControlPanel({
   isLoading,
   canBuild,
 }: Props) {
+  const paintValue =
+    color && finish
+      ? `${color.name} · ${finish.label}`
+      : color?.name ?? finish?.label ?? "—";
+
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-panel">
-      <Section label="Paint" value={color?.name ?? "—"}>
+      <Section
+        label="Build style"
+        value={PRESETS.find((p) => p.id === presetId)?.label ?? "Custom"}
+      >
+        <div className="grid grid-cols-2 gap-1.5">
+          {PRESETS.map((p) => {
+            const active = presetId === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                title={p.description}
+                onClick={() => onPreset(p)}
+                aria-pressed={active}
+                className={`rounded border px-3 py-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  active
+                    ? "border-accent bg-accent/10"
+                    : "border-line-strong hover:border-muted"
+                }`}
+              >
+                <span
+                  className={`block text-sm ${
+                    active ? "text-accent" : "text-foreground"
+                  }`}
+                >
+                  {p.label}
+                </span>
+                <span className="mt-0.5 block truncate text-[11px] text-muted">
+                  {p.description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section label="Paint" value={paintValue}>
         <div className="flex flex-wrap gap-2.5">
           {COLORS.map((c) => {
             const active = color?.name === c.name;
@@ -90,6 +175,16 @@ export default function ControlPanel({
             );
           })}
         </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {FINISHES.map((f) => (
+            <Chip
+              key={f.id}
+              label={f.label}
+              active={finish?.id === f.id}
+              onClick={() => onFinish(f)}
+            />
+          ))}
+        </div>
       </Section>
 
       <Section label="Rims" value={rim?.label ?? "—"}>
@@ -105,10 +200,51 @@ export default function ControlPanel({
                 className={`rounded border px-3 py-2 text-left text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   active
                     ? "border-accent bg-accent/10 text-accent"
-                    : "border-line-strong text-muted hover:border-line-strong hover:text-foreground"
+                    : "border-line-strong text-muted hover:text-foreground"
                 }`}
               >
                 {r.label}
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section
+        label="Glass"
+        value={tint ? `${tint.label} · ${tint.vlt}% VLT` : "—"}
+      >
+        <div className="grid grid-cols-4 gap-1.5">
+          {TINTS.map((t) => {
+            const active = tint?.id === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => onTint(t)}
+                aria-pressed={active}
+                title={`${t.vlt}% visible light transmission`}
+                className={`flex flex-col items-center gap-1.5 rounded border px-2 py-2 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                  active
+                    ? "border-accent bg-accent/10"
+                    : "border-line-strong hover:border-muted"
+                }`}
+              >
+                {/* Window swatch — darker square = darker glass */}
+                <span
+                  aria-hidden
+                  className="h-5 w-7 rounded-[3px] border border-white/15"
+                  style={{
+                    backgroundColor: `rgba(190, 210, 235, ${t.vlt / 100})`,
+                  }}
+                />
+                <span
+                  className={`text-[11px] ${
+                    active ? "text-accent" : "text-muted"
+                  }`}
+                >
+                  {t.label}
+                </span>
               </button>
             );
           })}
@@ -155,7 +291,9 @@ export default function ControlPanel({
                 </span>
                 <span
                   className={
-                    active ? "text-foreground" : "text-muted group-hover:text-foreground"
+                    active
+                      ? "text-foreground"
+                      : "text-muted group-hover:text-foreground"
                   }
                 >
                   {m}

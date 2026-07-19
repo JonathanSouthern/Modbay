@@ -24,14 +24,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { image, color = null, rim = null, mods = [], freeText = "" } = body;
+  const {
+    image,
+    color = null,
+    finish = null,
+    rim = null,
+    tint = null,
+    mods = [],
+    freeText = "",
+  } = body;
 
   if (!image) {
     return NextResponse.json({ error: "Missing image" }, { status: 400 });
   }
 
   const hasSelections =
-    Boolean(color) || Boolean(rim) || mods.length > 0 || freeText.trim().length > 0;
+    Boolean(color) ||
+    Boolean(finish) ||
+    Boolean(rim) ||
+    Boolean(tint) ||
+    mods.length > 0 ||
+    freeText.trim().length > 0;
   if (!hasSelections) {
     return NextResponse.json(
       { error: "Select at least one modification" },
@@ -65,7 +78,9 @@ export async function POST(req: Request) {
   try {
     const prompt = await buildGeminiPrompt(image, {
       color,
+      finish,
       rim,
+      tint,
       mods,
       freeText,
     });

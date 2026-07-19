@@ -3,6 +3,8 @@
 
 export type ColorOption = { name: string; hex: string };
 export type RimOption = { id: string; label: string };
+export type FinishOption = { id: string; label: string };
+export type TintOption = { id: string; label: string; vlt: number };
 
 export const COLORS: ColorOption[] = [
   { name: "Midnight black", hex: "#1a1a1a" },
@@ -25,11 +27,27 @@ export const RIMS: RimOption[] = [
   { id: "chrome", label: "Chrome split" },
 ];
 
+export const FINISHES: FinishOption[] = [
+  { id: "gloss", label: "Gloss" },
+  { id: "satin", label: "Satin" },
+  { id: "matte", label: "Matte" },
+  { id: "metallic", label: "Metallic" },
+  { id: "pearl", label: "Pearl" },
+];
+
+// vlt = visible light transmission (lower = darker glass).
+export const TINTS: TintOption[] = [
+  { id: "light", label: "Light", vlt: 50 },
+  { id: "medium", label: "Medium", vlt: 35 },
+  { id: "dark", label: "Dark", vlt: 20 },
+  { id: "limo", label: "Limo", vlt: 5 },
+];
+
+// "Tinted windows" left out — tint has a dedicated control.
 export const MODS: string[] = [
   "Lowered stance",
   "Body kit",
   "Carbon hood",
-  "Tinted windows",
   "Roof spoiler",
   "Side skirts",
   "Diffuser",
@@ -38,10 +56,119 @@ export const MODS: string[] = [
   "Clean & detail",
 ];
 
+// ── Preset build styles ──────────────────────────────────────────
+// One-tap specs that fill the whole sheet. Values reference the
+// option lists above so the UI stays a single source of truth.
+
+export type PresetOption = {
+  id: string;
+  label: string;
+  description: string;
+  spec: {
+    color: ColorOption | null;
+    finish: FinishOption | null;
+    rim: RimOption | null;
+    tint: TintOption | null;
+    mods: string[];
+    freeText: string;
+  };
+};
+
+const colorByName = (name: string): ColorOption =>
+  COLORS.find((c) => c.name === name)!;
+const rimById = (id: string): RimOption => RIMS.find((r) => r.id === id)!;
+const finishById = (id: string): FinishOption =>
+  FINISHES.find((f) => f.id === id)!;
+const tintById = (id: string): TintOption => TINTS.find((t) => t.id === id)!;
+
+export const PRESETS: PresetOption[] = [
+  {
+    id: "jdm",
+    label: "JDM Street",
+    description: "Pearl white, mesh rims, dropped and tucked",
+    spec: {
+      color: colorByName("Pearl white"),
+      finish: finishById("gloss"),
+      rim: rimById("mesh"),
+      tint: tintById("medium"),
+      mods: ["Lowered stance", "Side skirts", "Roof spoiler"],
+      freeText: "Clean JDM street style",
+    },
+  },
+  {
+    id: "murdered",
+    label: "Murdered Out",
+    description: "Matte black on black, limo glass",
+    spec: {
+      color: colorByName("Midnight black"),
+      finish: finishById("matte"),
+      rim: rimById("sport"),
+      tint: tintById("limo"),
+      mods: ["Lowered stance", "Diffuser"],
+      freeText: "Black out all badges, trim, and rims",
+    },
+  },
+  {
+    id: "trackday",
+    label: "Track Day",
+    description: "Race-prepped: aero, stripes, carbon",
+    spec: {
+      color: colorByName("Racing red"),
+      finish: finishById("gloss"),
+      rim: rimById("sport"),
+      tint: tintById("light"),
+      mods: ["Carbon hood", "Roof spoiler", "Diffuser", "Racing stripes"],
+      freeText: "Race-prepped track look",
+    },
+  },
+  {
+    id: "stanced",
+    label: "Stanced",
+    description: "Slammed, widebody, deep dish flush",
+    spec: {
+      color: colorByName("Gunmetal gray"),
+      finish: finishById("satin"),
+      rim: rimById("deepdish"),
+      tint: tintById("dark"),
+      mods: ["Lowered stance", "Widebody", "Diffuser"],
+      freeText: "Slammed stance with flush wheel fitment",
+    },
+  },
+  {
+    id: "lowrider",
+    label: "Lowrider",
+    description: "Candy paint, chrome, classic cruiser",
+    spec: {
+      color: colorByName("Deep purple"),
+      finish: finishById("pearl"),
+      rim: rimById("chrome"),
+      tint: tintById("medium"),
+      mods: ["Lowered stance", "Clean & detail"],
+      freeText: "Classic lowrider style with candy paint depth",
+    },
+  },
+  {
+    id: "overlander",
+    label: "Overlander",
+    description: "Matte green, lifted, ready for dirt",
+    spec: {
+      color: colorByName("British green"),
+      finish: finishById("matte"),
+      rim: rimById("stock"),
+      tint: tintById("light"),
+      mods: ["Clean & detail"],
+      freeText:
+        "Slight suspension lift, all-terrain tires, roof rack with light bar",
+    },
+  },
+];
+
 // Payload shared between the client request and the prompt builder.
 export type ModOptions = {
   color: ColorOption | null;
+  finish: FinishOption | null;
   rim: RimOption | null;
+  tint: TintOption | null;
   mods: string[];
   freeText: string;
 };

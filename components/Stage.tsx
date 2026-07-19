@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import CompareSlider from "@/components/CompareSlider";
 import { MAX_IMAGE_BYTES } from "@/lib/mods";
@@ -42,6 +42,7 @@ export default function Stage({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const dragDepth = useRef(0);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -61,32 +62,75 @@ export default function Stage({
     [onImage, onError]
   );
 
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
+  // Page-wide drag & drop: dragging a file anywhere over the window shows
+  // a takeover veil; dropping anywhere loads the photo.
+  useEffect(() => {
+    const isFileDrag = (e: DragEvent) =>
+      Array.from(e.dataTransfer?.types ?? []).includes("Files");
+
+    const onEnter = (e: DragEvent) => {
+      if (!isFileDrag(e)) return;
+      dragDepth.current += 1;
+      setDragging(true);
+    };
+    const onLeave = (e: DragEvent) => {
+      if (!isFileDrag(e)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setDragging(false);
+    };
+    const onOver = (e: DragEvent) => {
+      if (isFileDrag(e)) e.preventDefault(); // allow dropping
+    };
+    const onDrop = (e: DragEvent) => {
+      if (!isFileDrag(e)) return;
       e.preventDefault();
+      dragDepth.current = 0;
       setDragging(false);
-      const file = e.dataTransfer.files?.[0];
+      const file = e.dataTransfer?.files?.[0];
       if (file) handleFile(file);
-    },
-    [handleFile]
-  );
+    };
+
+    window.addEventListener("dragenter", onEnter);
+    window.addEventListener("dragleave", onLeave);
+    window.addEventListener("dragover", onOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragenter", onEnter);
+      window.removeEventListener("dragleave", onLeave);
+      window.removeEventListener("dragover", onOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [handleFile]);
 
   const browse = useCallback(() => inputRef.current?.click(), []);
 
   return (
     <div className="space-y-2.5">
+      {/* Full-page drop veil */}
+      {dragging && (
+        <div className="fade-in pointer-events-none fixed inset-0 z-[60] flex items-center justify-center bg-stage/85 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-lg border border-accent px-10 py-8">
+            <span className="font-display text-2xl font-semibold uppercase tracking-[0.14em] text-accent">
+              Drop to load your ride
+            </span>
+            <span className="font-mono text-[11px] text-muted">
+              JPG · PNG · WEBP — up to 10MB
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* The stage */}
       <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
         className={`relative aspect-[16/10] w-full overflow-hidden rounded-lg border bg-stage transition-colors ${
           dragging ? "border-accent" : "border-line"
         }`}
       >
+        {/* Soft vignette for depth */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.035),transparent_65%)]"
+        />
         <input
           ref={inputRef}
           type="file"

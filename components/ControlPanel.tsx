@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import BuildButton from "@/components/BuildButton";
 import {
   COLORS,
@@ -28,31 +29,68 @@ type Props = {
 };
 
 /**
- * Spec-sheet section: an uppercase label on the left, the current
- * selection echoed in mono on the right, hairline rule below.
+ * Collapsible spec-sheet section: the header shows the uppercase label,
+ * the current selection echoed in mono, and a chevron. Collapsed sections
+ * keep their value echo visible, so the sheet stays scannable.
  */
 function Section({
   label,
   value,
+  open,
+  onToggle,
   children,
 }: {
   label: string;
   value?: string;
+  open: boolean;
+  onToggle: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-b border-line px-4 py-4 last:border-b-0">
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h3 className="font-display text-xs font-semibold uppercase tracking-[0.22em] text-muted">
+    <section className="border-b border-line last:border-b-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-label={`${label} section`}
+        className="flex w-full items-baseline justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-panel-raised/50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+      >
+        <span className="font-display text-xs font-semibold uppercase tracking-[0.22em] text-muted">
           {label}
-        </h3>
-        {value && (
-          <span className="truncate font-mono text-[11px] text-foreground">
-            {value}
-          </span>
-        )}
+        </span>
+        <span className="flex min-w-0 items-center gap-2">
+          {value && (
+            <span className="truncate font-mono text-[11px] text-foreground">
+              {value}
+            </span>
+          )}
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            className={`shrink-0 self-center text-muted transition-transform duration-200 ${
+              open ? "rotate-180" : ""
+            }`}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
+      </button>
+      <div
+        className="grid transition-[grid-template-rows] duration-300 ease-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        {/* inert removes collapsed controls from tab order and the a11y tree */}
+        <div className="min-h-0 overflow-hidden" inert={!open}>
+          <div className="px-4 pb-4">{children}</div>
+        </div>
       </div>
-      {children}
     </section>
   );
 }
@@ -84,7 +122,7 @@ function Chip({
       onClick={onClick}
       title={title}
       aria-pressed={active}
-      className={`rounded border px-2.5 py-1 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+      className={`rounded border px-2.5 py-1 text-xs transition active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         active
           ? "border-accent bg-accent/10 text-accent"
           : "border-line-strong text-muted hover:text-foreground"
@@ -118,7 +156,7 @@ function Swatch({
       aria-label={label}
       aria-pressed={active}
       onClick={onClick}
-      className={`${size} rounded-full border border-white/10 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+      className={`${size} rounded-full border border-white/10 transition active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         active
           ? "ring-2 ring-accent ring-offset-2 ring-offset-panel"
           : "hover:scale-105"
@@ -154,6 +192,24 @@ export default function ControlPanel({
     freeText,
   } = spec;
 
+  // Progressive disclosure: core sections start open, detail sections
+  // start collapsed. Collapsed headers still echo their values.
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    style: true,
+    paint: true,
+    rims: true,
+    stance: false,
+    glass: false,
+    lights: false,
+    mods: true,
+    notes: false,
+  });
+  const sectionProps = (id: string) => ({
+    open: Boolean(openSections[id]),
+    onToggle: () =>
+      setOpenSections((s) => ({ ...s, [id]: !s[id] })),
+  });
+
   // Every single-select control toggles: tap the active option to clear it.
   const toggle = <K extends keyof ModOptions>(
     key: K,
@@ -185,6 +241,7 @@ export default function ControlPanel({
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-panel">
       <Section
+        {...sectionProps("style")}
         label="Build style"
         value={PRESETS.find((p) => p.id === presetId)?.label ?? "Custom"}
       >
@@ -198,7 +255,7 @@ export default function ControlPanel({
                 title={p.description}
                 onClick={() => onPreset(p)}
                 aria-pressed={active}
-                className={`rounded border px-3 py-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`rounded border px-3 py-2 text-left transition active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   active
                     ? "border-accent bg-accent/10"
                     : "border-line-strong hover:border-muted"
@@ -220,7 +277,7 @@ export default function ControlPanel({
         </div>
       </Section>
 
-      <Section label="Paint" value={paintValue}>
+      <Section {...sectionProps("paint")} label="Paint" value={paintValue}>
         <div className="flex flex-wrap gap-2.5">
           {COLORS.map((c) => (
             <Swatch
@@ -245,7 +302,7 @@ export default function ControlPanel({
         </div>
       </Section>
 
-      <Section label="Rims" value={rimValue}>
+      <Section {...sectionProps("rims")} label="Rims" value={rimValue}>
         <SubLabel>Style</SubLabel>
         <div className="grid grid-cols-2 gap-1.5">
           {RIMS.map((r) => {
@@ -256,7 +313,7 @@ export default function ControlPanel({
                 type="button"
                 onClick={() => toggle("rim", rim, r)}
                 aria-pressed={active}
-                className={`rounded border px-3 py-2 text-left text-sm transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                className={`rounded border px-3 py-2 text-left text-sm transition active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                   active
                     ? "border-accent bg-accent/10 text-accent"
                     : "border-line-strong text-muted hover:text-foreground"
@@ -293,7 +350,7 @@ export default function ControlPanel({
         </div>
       </Section>
 
-      <Section label="Stance" value={stance?.label ?? "—"}>
+      <Section {...sectionProps("stance")} label="Stance" value={stance?.label ?? "—"}>
         <div className="grid grid-cols-3 gap-1.5">
           {STANCES.map((s) => (
             <Chip
@@ -307,6 +364,7 @@ export default function ControlPanel({
       </Section>
 
       <Section
+        {...sectionProps("glass")}
         label="Glass"
         value={tint ? `${tint.label} · ${tint.vlt}% VLT` : "—"}
       >
@@ -347,7 +405,7 @@ export default function ControlPanel({
         </div>
       </Section>
 
-      <Section label="Lights" value={lightsValue}>
+      <Section {...sectionProps("lights")} label="Lights" value={lightsValue}>
         <SubLabel>Headlights</SubLabel>
         <div className="flex flex-wrap gap-1.5">
           {HEADLIGHTS.map((h) => (
@@ -376,6 +434,7 @@ export default function ControlPanel({
       </Section>
 
       <Section
+        {...sectionProps("mods")}
         label="Mods"
         value={mods.length > 0 ? `${mods.length} selected` : "—"}
       >
@@ -434,7 +493,7 @@ export default function ControlPanel({
         </div>
       </Section>
 
-      <Section label="Notes">
+      <Section {...sectionProps("notes")} label="Notes">
         <textarea
           value={freeText}
           onChange={(e) => onPatch({ freeText: e.target.value })}

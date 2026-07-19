@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 type Props = {
@@ -11,11 +11,34 @@ type Props = {
 /**
  * Before/after reveal: the build is clipped to the right of a draggable
  * divider. Pointer-driven, keyboard-accessible (arrow keys on the handle).
+ * On mount the divider sweeps in from the right edge, "painting" the build
+ * across the car (skipped under prefers-reduced-motion).
  */
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export default function CompareSlider({ original, result }: Props) {
-  const [pos, setPos] = useState(50); // divider position, % from left
+  // Divider position, % from left. With motion allowed, start at the right
+  // edge and sweep to center; under reduced motion, start at center.
+  const [pos, setPos] = useState(() => (prefersReducedMotion() ? 50 : 97));
+  const [sweeping, setSweeping] = useState(() => !prefersReducedMotion());
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+
+  useEffect(() => {
+    if (!prefersReducedMotion()) {
+      // Two frames so the initial 97% paints before the transition kicks in.
+      const raf = requestAnimationFrame(() =>
+        requestAnimationFrame(() => setPos(50))
+      );
+      const timer = setTimeout(() => setSweeping(false), 950);
+      return () => {
+        cancelAnimationFrame(raf);
+        clearTimeout(timer);
+      };
+    }
+  }, []);
 
   const updateFromClientX = useCallback((clientX: number) => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -27,6 +50,7 @@ export default function CompareSlider({ original, result }: Props) {
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       dragging.current = true;
+      setSweeping(false); // user takes over — stop any intro transition
       (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
       updateFromClientX(e.clientX);
     },
@@ -77,7 +101,12 @@ export default function CompareSlider({ original, result }: Props) {
       {/* Build, clipped to the right of the divider */}
       <div
         className="absolute inset-0"
-        style={{ clipPath: `inset(0 0 0 ${pos}%)` }}
+        style={{
+          clipPath: `inset(0 0 0 ${pos}%)`,
+          ...(sweeping
+            ? { transition: "clip-path 900ms cubic-bezier(0.22, 1, 0.36, 1)" }
+            : {}),
+        }}
       >
         <Image
           src={result}
@@ -101,7 +130,12 @@ export default function CompareSlider({ original, result }: Props) {
       {/* Divider + handle */}
       <div
         className="absolute bottom-0 top-0 w-px bg-accent"
-        style={{ left: `${pos}%` }}
+        style={{
+          left: `${pos}%`,
+          ...(sweeping
+            ? { transition: "left 900ms cubic-bezier(0.22, 1, 0.36, 1)" }
+            : {}),
+        }}
         aria-hidden
       />
       <button
@@ -113,7 +147,12 @@ export default function CompareSlider({ original, result }: Props) {
         aria-valuenow={Math.round(pos)}
         onKeyDown={onKeyDown}
         className="absolute top-1/2 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize items-center justify-center rounded-full border border-accent bg-stage/90 text-accent shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        style={{ left: `${pos}%` }}
+        style={{
+          left: `${pos}%`,
+          ...(sweeping
+            ? { transition: "left 900ms cubic-bezier(0.22, 1, 0.36, 1)" }
+            : {}),
+        }}
       >
         <svg
           width="14"

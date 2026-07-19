@@ -25,12 +25,12 @@ export default function AuthGate({ variant, onDismiss }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-stage/80 p-4"
+      className="fade-in fixed inset-0 z-50 flex items-center justify-center bg-stage/80 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label={title}
     >
-      <div className="w-full max-w-sm rounded-lg border border-line bg-panel p-6">
+      <div className="pop-in w-full max-w-sm rounded-lg border border-line bg-panel p-6">
         <h2 className="font-display text-xl font-semibold uppercase tracking-[0.12em] text-foreground">
           {title}
         </h2>

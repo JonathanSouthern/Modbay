@@ -12,7 +12,8 @@ export default function BuildButton({ onBuild, isLoading, canBuild }: Props) {
       type="button"
       onClick={onBuild}
       disabled={isLoading || !canBuild}
-      className="flex w-full items-center justify-center gap-2.5 rounded bg-accent px-4 py-3 font-display text-base font-semibold uppercase tracking-[0.16em] text-stage transition hover:bg-accent-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
+      title="Cmd/Ctrl + Enter"
+      className="flex w-full items-center justify-center gap-2.5 rounded bg-accent px-4 py-3 font-display text-base font-semibold uppercase tracking-[0.16em] text-stage transition active:scale-[0.99] hover:bg-accent-press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40"
     >
       {isLoading ? (
         <>

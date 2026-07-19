@@ -88,6 +88,19 @@ export default function Studio() {
   const hasSelections = specHasSelections(spec);
   const canBuild = Boolean(uploadedImage) && hasSelections;
 
+  // The build flow as three explicit steps for the progress strip.
+  const steps: { label: string; state: "done" | "current" | "todo" }[] = [
+    { label: "Photo", state: uploadedImage ? "done" : "current" },
+    {
+      label: "Spec",
+      state: hasSelections ? "done" : uploadedImage ? "current" : "todo",
+    },
+    {
+      label: "Build",
+      state: resultImage ? "done" : canBuild ? "current" : "todo",
+    },
+  ];
+
   const handleImage = useCallback((dataUrl: string) => {
     setUploadedImage(dataUrl);
     setResultImage(null); // re-upload clears previous result
@@ -143,6 +156,18 @@ export default function Studio() {
     }
   }, [uploadedImage, hasSelections, isSignedIn, spec]);
 
+  // Cmd/Ctrl+Enter builds from anywhere on the page.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (canBuild && !isLoading) build();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canBuild, isLoading, build]);
+
   return (
     <div className="mx-auto max-w-6xl px-4 pb-28 pt-8 sm:px-6 lg:pb-12">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -154,7 +179,55 @@ export default function Studio() {
             Upload a photo, spec the build, and see it on your actual car.
           </p>
         </div>
-        {isSignedIn && <UsageBadge remaining={remaining} limit={DAILY_LIMIT} />}
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          {isSignedIn && (
+            <UsageBadge remaining={remaining} limit={DAILY_LIMIT} />
+          )}
+          {/* Guided flow: where you are in Photo → Spec → Build */}
+          <ol className="flex items-center gap-0" aria-label="Build progress">
+            {steps.map((step, i) => (
+              <li key={step.label} className="flex items-center">
+                {i > 0 && (
+                  <span
+                    aria-hidden
+                    className={`mx-2.5 h-px w-6 ${
+                      step.state === "todo" ? "bg-line-strong" : "bg-accent/60"
+                    }`}
+                  />
+                )}
+                <span
+                  className={`flex items-center gap-1.5 font-mono text-[11px] tracking-wide ${
+                    step.state === "done"
+                      ? "text-accent"
+                      : step.state === "current"
+                        ? "text-foreground"
+                        : "text-muted"
+                  }`}
+                >
+                  <span className="font-display text-xs font-semibold">
+                    0{i + 1}
+                  </span>
+                  {step.label}
+                  {step.state === "done" && (
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-label="done"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
 
       {error && (
@@ -176,7 +249,7 @@ export default function Studio() {
           onError={setError}
         />
 
-        <div className="lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:self-start lg:overflow-y-auto">
+        <div className="rail-scroll lg:sticky lg:top-[4.5rem] lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
           <ControlPanel
             spec={spec}
             onPatch={patchSpec}

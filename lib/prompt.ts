@@ -87,61 +87,62 @@ function describeSelections(options: ModOptions): string {
  * call. Used when ANTHROPIC_API_KEY is not configured.
  */
 function templatePrompt(options: ModOptions): string {
-  const sentences: string[] = ["Edit this photo of a car."];
+  const changes: string[] = [];
   if (options.color) {
     const finish = options.finish
       ? ` with a ${options.finish.label.toLowerCase()} finish`
       : "";
-    sentences.push(
-      `Repaint the car ${options.color.name} (${options.color.hex})${finish}.`
+    changes.push(
+      `Paint: repaint the entire car body ${options.color.name} (${options.color.hex})${finish}.`
     );
   } else if (options.finish) {
-    sentences.push(
-      `Change the paint to a ${options.finish.label.toLowerCase()} finish, keeping the current color.`
+    changes.push(
+      `Paint: change the paint to a ${options.finish.label.toLowerCase()} finish, keeping the current color.`
     );
   }
   if (options.rim || options.rimColor || options.rimSize) {
-    const parts: string[] = [];
-    if (options.rimSize) parts.push(`${options.rimSize.id}-inch`);
-    if (options.rimColor)
-      parts.push(RIM_COLOR_PROMPTS[options.rimColor.id] ?? options.rimColor.label.toLowerCase());
-    if (options.rim) parts.push(`${options.rim.label.toLowerCase()} style`);
-    sentences.push(`Replace the wheels with ${parts.join(" ")} rims.`);
+    const size = options.rimSize ? `${options.rimSize.id}-inch ` : "";
+    const style = options.rim ? `${options.rim.label.toLowerCase()}-style ` : "";
+    const color = options.rimColor
+      ? ` finished in ${RIM_COLOR_PROMPTS[options.rimColor.id] ?? options.rimColor.label.toLowerCase()}`
+      : "";
+    changes.push(
+      `Wheels: completely replace the existing wheels with ${size}${style}aftermarket rims${color}. The new wheels must look clearly different from the current ones.`
+    );
   }
   if (options.stance) {
-    sentences.push(
-      `Adjust the stance: ${STANCE_PROMPTS[options.stance.id] ?? options.stance.label}.`
+    changes.push(
+      `Ride height: ${STANCE_PROMPTS[options.stance.id] ?? options.stance.label}. The change in ride height must be obvious compared to the original photo.`
     );
   }
   if (options.tint) {
-    sentences.push(
-      `Apply ${TINT_PROMPTS[options.tint.id] ?? options.tint.label.toLowerCase() + " window tint"}.`
+    changes.push(
+      `Windows: ${TINT_PROMPTS[options.tint.id] ?? options.tint.label.toLowerCase() + " window tint"}.`
     );
   }
   if (options.headlights) {
-    sentences.push(
-      `Give the car ${HEADLIGHT_PROMPTS[options.headlights.id] ?? options.headlights.label}.`
+    changes.push(
+      `Lights: ${HEADLIGHT_PROMPTS[options.headlights.id] ?? options.headlights.label}.`
     );
   }
   if (options.underglow) {
-    sentences.push(
-      `Add ${options.underglow.label.toLowerCase()} (${options.underglow.hex}) neon underglow beneath the car, casting a soft glow on the ground.`
+    changes.push(
+      `Underglow: add ${options.underglow.label.toLowerCase()} (${options.underglow.hex}) neon underglow beneath the car, casting a visible glow on the ground.`
     );
   }
-  if (options.mods.length > 0) {
-    sentences.push(
-      `Add these modifications: ${options.mods
-        .map((m) => MOD_PROMPTS[m] ?? m)
-        .join("; ")}.`
-    );
+  for (const m of options.mods) {
+    changes.push(`Body: ${MOD_PROMPTS[m] ?? m}.`);
   }
   if (options.freeText.trim()) {
-    sentences.push(`Additional request: ${options.freeText.trim()}.`);
+    changes.push(`Also: ${options.freeText.trim()}.`);
   }
-  sentences.push(
-    "Keep the original camera angle, background, environment, lighting, and reflections. Do not change anything else about the scene. The result must look like a real photograph."
-  );
-  return sentences.join(" ");
+
+  const list = changes.map((c, i) => `${i + 1}. ${c}`).join("\n");
+  return [
+    "Edit this photo of a car. Apply ALL of the following modifications — every numbered change must be clearly visible in the result, do not skip any:",
+    list,
+    "Keep the original camera angle, background, environment, lighting, and reflections. Do not change anything else about the scene. The result must look like a real photograph.",
+  ].join("\n");
 }
 
 /**

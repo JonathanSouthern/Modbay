@@ -29,9 +29,20 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://modbay.vercel.app"),
   title: "Modbay — see mods on your own car",
   description:
     "Upload a photo of your car, spec the build — paint, rims, body kit — and see it rendered on your actual car.",
+  openGraph: {
+    title: "Modbay — see mods on your own car",
+    description:
+      "Upload a photo of your car, spec the build — paint, rims, stance, tint — and see it rendered on your actual car.",
+    siteName: "Modbay",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

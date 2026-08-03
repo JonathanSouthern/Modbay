@@ -22,6 +22,49 @@ function extFromDataUrl(dataUrl: string): string {
   return type === "jpeg" ? "jpg" : type;
 }
 
+// Vercel functions cap request bodies at ~4.5MB, and the photo travels as a
+// base64 data URL (~1.37× its binary size). Downscale + recompress in the
+// browser so any accepted photo fits: longest edge capped, quality stepped
+// down until the payload is comfortably under the limit.
+const MAX_EDGE_PX = 2000;
+const PASSTHROUGH_BYTES = 1_500_000; // small files skip re-encoding
+const TARGET_DATAURL_CHARS = 3_000_000; // ≈2.2MB binary, well under the cap
+
+function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function prepareImage(file: File): Promise<string> {
+  if (file.size <= PASSTHROUGH_BYTES) return readAsDataUrl(file);
+
+  // from-image applies EXIF rotation, so phone photos come out upright.
+  const bitmap = await createImageBitmap(file, {
+    imageOrientation: "from-image",
+  }).catch(() => null);
+  if (!bitmap) return readAsDataUrl(file);
+
+  const scale = Math.min(1, MAX_EDGE_PX / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return readAsDataUrl(file);
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  let out = "";
+  for (const quality of [0.85, 0.7, 0.55]) {
+    out = canvas.toDataURL("image/jpeg", quality);
+    if (out.length <= TARGET_DATAURL_CHARS) return out;
+  }
+  return out; // worst case: smallest attempt
+}
+
 /** Viewfinder-style corner bracket. */
 function Corner({ className }: { className: string }) {
   return (
@@ -54,10 +97,9 @@ export default function Stage({
         onError("That photo is over 10MB — export a smaller version and retry.");
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => onImage(reader.result as string);
-      reader.onerror = () => onError("Couldn't read that file — try again.");
-      reader.readAsDataURL(file);
+      prepareImage(file)
+        .then(onImage)
+        .catch(() => onError("Couldn't read that file — try again."));
     },
     [onImage, onError]
   );

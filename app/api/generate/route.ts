@@ -74,8 +74,18 @@ export async function POST(req: Request) {
     );
   }
 
-  // 3. Rate limit (10 builds/user/day).
-  const rate = await checkAndIncrement(userId);
+  // 3. Rate limit (10 builds/user/day). Fails closed: if the store is
+  // unavailable in production, builds are refused rather than unmetered.
+  let rate;
+  try {
+    rate = await checkAndIncrement(userId);
+  } catch (err) {
+    console.error("[generate] rate limit unavailable:", err);
+    return NextResponse.json(
+      { error: "Builds are temporarily unavailable. Please try again later." },
+      { status: 503 }
+    );
+  }
   if (!rate.allowed) {
     return NextResponse.json(
       { error: "Daily limit reached (10 builds)" },

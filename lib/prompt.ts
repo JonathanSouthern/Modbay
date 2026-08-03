@@ -3,6 +3,9 @@ import { parseDataUrl } from "@/lib/image";
 import {
   HEADLIGHT_PROMPTS,
   STANCE_PROMPTS,
+  TINT_PROMPTS,
+  RIM_COLOR_PROMPTS,
+  MOD_PROMPTS,
   type ModOptions,
 } from "@/lib/mods";
 
@@ -35,7 +38,7 @@ function describeSelections(options: ModOptions): string {
     if (options.rim) parts.push(`${options.rim.label} style`);
     if (options.rimColor)
       parts.push(
-        `${options.rimColor.label.toLowerCase()} color (${options.rimColor.hex})`
+        RIM_COLOR_PROMPTS[options.rimColor.id] ?? options.rimColor.label.toLowerCase()
       );
     if (options.rimSize) parts.push(`${options.rimSize.id} inch`);
     lines.push(`Rims: ${parts.join(", ")}`);
@@ -49,7 +52,7 @@ function describeSelections(options: ModOptions): string {
   }
   if (options.tint) {
     lines.push(
-      `Window tint: ${options.tint.label} (${options.tint.vlt}% visible light transmission)`
+      `Window tint: ${TINT_PROMPTS[options.tint.id] ?? options.tint.label}`
     );
   }
   if (options.headlights) {
@@ -67,7 +70,11 @@ function describeSelections(options: ModOptions): string {
     );
   }
   if (options.mods.length > 0) {
-    lines.push(`Modifications: ${options.mods.join(", ")}`);
+    lines.push(
+      `Modifications: ${options.mods
+        .map((m) => MOD_PROMPTS[m] ?? m)
+        .join("; ")}`
+    );
   }
   if (options.freeText.trim()) {
     lines.push(`Additional request: ${options.freeText.trim()}`);
@@ -96,7 +103,8 @@ function templatePrompt(options: ModOptions): string {
   if (options.rim || options.rimColor || options.rimSize) {
     const parts: string[] = [];
     if (options.rimSize) parts.push(`${options.rimSize.id}-inch`);
-    if (options.rimColor) parts.push(options.rimColor.label.toLowerCase());
+    if (options.rimColor)
+      parts.push(RIM_COLOR_PROMPTS[options.rimColor.id] ?? options.rimColor.label.toLowerCase());
     if (options.rim) parts.push(`${options.rim.label.toLowerCase()} style`);
     sentences.push(`Replace the wheels with ${parts.join(" ")} rims.`);
   }
@@ -107,7 +115,7 @@ function templatePrompt(options: ModOptions): string {
   }
   if (options.tint) {
     sentences.push(
-      `Tint the side and rear windows to a ${options.tint.label.toLowerCase()} tint (${options.tint.vlt}% visible light transmission).`
+      `Apply ${TINT_PROMPTS[options.tint.id] ?? options.tint.label.toLowerCase() + " window tint"}.`
     );
   }
   if (options.headlights) {
@@ -121,7 +129,11 @@ function templatePrompt(options: ModOptions): string {
     );
   }
   if (options.mods.length > 0) {
-    sentences.push(`Add these modifications: ${options.mods.join(", ")}.`);
+    sentences.push(
+      `Add these modifications: ${options.mods
+        .map((m) => MOD_PROMPTS[m] ?? m)
+        .join("; ")}.`
+    );
   }
   if (options.freeText.trim()) {
     sentences.push(`Additional request: ${options.freeText.trim()}.`);

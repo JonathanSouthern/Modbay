@@ -5,7 +5,13 @@ export type ColorOption = { name: string; hex: string };
 export type RimOption = { id: string; label: string };
 export type FinishOption = { id: string; label: string };
 export type TintOption = { id: string; label: string; vlt: number };
-export type SwatchOption = { id: string; label: string; hex: string };
+export type SwatchOption = {
+  id: string;
+  label: string;
+  hex: string;
+  /** Optional CSS background (e.g. metallic gradient) for the UI swatch. */
+  swatch?: string;
+};
 export type ChipOption = { id: string; label: string };
 
 export const COLORS: ColorOption[] = [
@@ -39,13 +45,45 @@ export const RIMS: RimOption[] = [
 
 export const RIM_COLORS: SwatchOption[] = [
   { id: "black", label: "Gloss black", hex: "#0b0b0d" },
-  { id: "bronze", label: "Bronze", hex: "#8c6a3f" },
-  { id: "gunmetal", label: "Gunmetal", hex: "#55595f" },
-  { id: "chrome", label: "Chrome", hex: "#c8ccd2" },
-  { id: "gold", label: "Gold", hex: "#c9a227" },
+  {
+    id: "bronze",
+    label: "Bronze",
+    hex: "#8c6a3f",
+    swatch: "linear-gradient(135deg, #c49a5e 0%, #8c6a3f 45%, #d8b078 60%, #6f5330 100%)",
+  },
+  {
+    id: "gunmetal",
+    label: "Gunmetal",
+    hex: "#55595f",
+    swatch: "linear-gradient(135deg, #7a8088 0%, #4a4e55 50%, #666c74 100%)",
+  },
+  {
+    id: "chrome",
+    label: "Chrome",
+    hex: "#c8ccd2",
+    swatch: "linear-gradient(135deg, #f6f8fa 0%, #98a0aa 38%, #eef1f4 55%, #7d848d 78%, #d9dde2 100%)",
+  },
+  {
+    id: "gold",
+    label: "Gold",
+    hex: "#c9a227",
+    swatch: "linear-gradient(135deg, #f6dd8b 0%, #c9a227 42%, #f9ecb0 58%, #9f7c12 100%)",
+  },
   { id: "red", label: "Red", hex: "#c0121a" },
   { id: "white", label: "White", hex: "#eef0f2" },
 ];
+
+// How each rim color should read in the edit prompt — finishes spelled out
+// so metallics actually come back shiny.
+export const RIM_COLOR_PROMPTS: Record<string, string> = {
+  black: "gloss black",
+  bronze: "satin bronze metallic",
+  gunmetal: "dark gunmetal gray metallic",
+  chrome: "mirror-polished chrome with bright specular reflections of the surroundings",
+  gold: "polished metallic gold, visibly reflective like jewelry",
+  red: "gloss red",
+  white: "gloss white",
+};
 
 export const RIM_SIZES: ChipOption[] = [
   { id: "18", label: "18″" },
@@ -62,9 +100,10 @@ export const STANCES: ChipOption[] = [
 
 // How each stance should read in the edit prompt.
 export const STANCE_PROMPTS: Record<string, string> = {
-  lowered: "moderately lowered suspension, reduced wheel gap",
-  slammed: "aggressively low, nearly no wheel gap",
-  lifted: "raised off-road suspension with taller ride height",
+  lowered: "moderately lowered suspension, visibly reduced wheel gap",
+  slammed:
+    "slammed to the ground: extreme suspension drop, rocker panels just inches off the pavement, wheels tucked deep into the arches, almost zero ground clearance",
+  lifted: "raised off-road suspension with taller ride height and visible clearance",
 };
 
 // vlt = visible light transmission (lower = darker glass).
@@ -80,6 +119,16 @@ export const HEADLIGHTS: ChipOption[] = [
   { id: "blacked", label: "Blacked out" },
   { id: "halo", label: "LED halo" },
 ];
+
+// How each tint level should read in the edit prompt — the darker levels
+// spell out opacity so the interior actually disappears.
+export const TINT_PROMPTS: Record<string, string> = {
+  light: "light smoke window tint (50% VLT), interior still partially visible",
+  medium: "medium window tint (35% VLT), interior dim and hard to make out",
+  dark: "dark window tint (20% VLT), interior barely visible through the glass",
+  limo:
+    "limo tint (5% VLT): all side and rear windows are glossy jet black and fully opaque — the interior is completely hidden and the glass reads as a black mirror",
+};
 
 export const HEADLIGHT_PROMPTS: Record<string, string> = {
   smoked: "smoked/tinted headlight and taillight lenses",
@@ -108,6 +157,24 @@ export const MODS: string[] = [
   "Racing stripes",
   "Clean & detail",
 ];
+
+// How each mod should read in the edit prompt — precise enough that the
+// image model doesn't improvise (e.g. a partial carbon overlay).
+export const MOD_PROMPTS: Record<string, string> = {
+  "Body kit":
+    "aggressive aftermarket body kit: front splitter, side extensions, rear valance",
+  "Carbon hood":
+    "replace the ENTIRE hood panel with exposed carbon fiber — the whole hood is glossy black carbon weave edge to edge, not a partial overlay or accent",
+  "Roof spoiler": "roof-edge spoiler above the rear window",
+  "Side skirts": "extended side skirts running along the rocker panels",
+  Diffuser: "rear diffuser with visible vertical fins under the rear bumper",
+  Widebody:
+    "widebody kit with bolted or molded fender flares and a visibly wider track",
+  "Racing stripes":
+    "twin parallel racing stripes running front to back over hood, roof, and trunk",
+  "Clean & detail":
+    "freshly detailed: spotless glossy paint, clean wheels, no dirt or grime",
+};
 
 // Payload shared between the client request and the prompt builder.
 export type ModOptions = {

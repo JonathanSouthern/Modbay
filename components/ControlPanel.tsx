@@ -141,6 +141,7 @@ function Swatch({
   onClick,
   size = "h-9 w-9",
   glow = false,
+  background,
 }: {
   hex: string;
   label: string;
@@ -148,6 +149,8 @@ function Swatch({
   onClick: () => void;
   size?: string;
   glow?: boolean;
+  /** CSS background override (e.g. metallic gradient); falls back to hex. */
+  background?: string;
 }) {
   return (
     <button
@@ -162,7 +165,7 @@ function Swatch({
           : "hover:scale-105"
       }`}
       style={{
-        backgroundColor: hex,
+        background: background ?? hex,
         ...(glow ? { boxShadow: `0 0 ${active ? 12 : 6}px ${hex}` } : {}),
       }}
     />
@@ -330,6 +333,7 @@ export default function ControlPanel({
             <Swatch
               key={c.id}
               hex={c.hex}
+              background={c.swatch}
               label={c.label}
               active={rimColor?.id === c.id}
               onClick={() => toggle("rimColor", rimColor, c)}

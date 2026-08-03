@@ -42,17 +42,20 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* Demo: drag the divider */}
-      <div className="mx-auto mt-10 max-w-4xl">
-        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-lg border border-line bg-stage">
-          <CompareSlider original="/demo/before.svg" result="/demo/after.svg" />
-          <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-stage/85 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-            Demo — drag the divider
+      {/* Demo: a real build — drag the divider */}
+      <div className="mx-auto mt-10 max-w-md">
+        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg border border-line bg-stage">
+          <CompareSlider
+            original="/demo/civic-before.webp"
+            result="/demo/civic-after.webp"
+          />
+          <span className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-stage/85 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+            Real build — drag the divider
           </span>
         </div>
         <p className="mt-2 text-center font-mono text-[11px] text-muted">
-          This build: deep purple pearl · bronze 20″ rims · slammed · limo
-          tint · purple underglow
+          This build: gunmetal gray · widebody · chrome deep dish · slammed ·
+          front splitter
         </p>
       </div>
 

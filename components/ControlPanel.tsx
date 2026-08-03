@@ -133,7 +133,11 @@ function Chip({
   );
 }
 
-/** Round color swatch with active ring. */
+/**
+ * Round color swatch with active ring. Hovering (or keyboard-focusing) shows
+ * the color name in an instant tooltip. The tooltip is position:fixed so the
+ * accordion's overflow clipping can't cut it off.
+ */
 function Swatch({
   hex,
   label,
@@ -152,13 +156,24 @@ function Swatch({
   /** CSS background override (e.g. metallic gradient); falls back to hex. */
   background?: string;
 }) {
+  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
+
+  const showTip = (e: React.SyntheticEvent<HTMLButtonElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ x: r.left + r.width / 2, y: r.top });
+  };
+  const hideTip = () => setTip(null);
+
   return (
     <button
       type="button"
-      title={label}
       aria-label={label}
       aria-pressed={active}
       onClick={onClick}
+      onMouseEnter={showTip}
+      onMouseLeave={hideTip}
+      onFocus={showTip}
+      onBlur={hideTip}
       className={`${size} rounded-full border border-white/10 transition active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         active
           ? "ring-2 ring-accent ring-offset-2 ring-offset-panel"
@@ -168,7 +183,17 @@ function Swatch({
         background: background ?? hex,
         ...(glow ? { boxShadow: `0 0 ${active ? 12 : 6}px ${hex}` } : {}),
       }}
-    />
+    >
+      {tip && (
+        <span
+          role="tooltip"
+          className="fade-in pointer-events-none fixed z-[70] -translate-x-1/2 -translate-y-full whitespace-nowrap rounded border border-line-strong bg-panel-raised px-2 py-1 font-mono text-[10px] tracking-wide text-foreground shadow-lg"
+          style={{ left: tip.x, top: tip.y - 7 }}
+        >
+          {label}
+        </span>
+      )}
+    </button>
   );
 }
 

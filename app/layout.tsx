@@ -29,7 +29,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pimp My Vehicle — see mods on your own car",
+  title: "Modbay — see mods on your own car",
   description:
     "Upload a photo of your car, spec the build — paint, rims, body kit — and see it rendered on your actual car.",
 };
@@ -54,7 +54,7 @@ export default function RootLayout({
                   className="block h-3.5 w-3.5 rounded-[2px] bg-accent"
                 />
                 <span className="font-display text-lg font-semibold uppercase tracking-[0.18em]">
-                  Pimp My <span className="text-muted">Vehicle</span>
+                  Mod<span className="text-muted">bay</span>
                 </span>
               </Link>
               <div className="flex items-center gap-2">

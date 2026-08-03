@@ -217,7 +217,7 @@ export default function Stage({
           </p>
           <a
             href={resultUrl}
-            download={`pimp-my-vehicle-build.${extFromDataUrl(resultUrl)}`}
+            download={`modbay-build.${extFromDataUrl(resultUrl)}`}
             className="inline-flex shrink-0 items-center gap-2 rounded border border-accent px-3.5 py-1.5 text-sm font-semibold text-accent transition hover:bg-accent hover:text-stage focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
             <svg

@@ -1,4 +1,4 @@
-# 🚗 Pimp My Vehicle
+# 🏁 Modbay
 
 AI-powered car customization. Upload a photo of your car, pick your mods (paint,
 rims, body kits, spoilers, tint…), and AI visualizes the build on your actual photo.

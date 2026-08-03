@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { buildGeminiPrompt } from "@/lib/prompt";
 import { editCarImage } from "@/lib/gemini";
-import { checkAndIncrement } from "@/lib/ratelimit";
+import { checkAndIncrement, refund } from "@/lib/ratelimit";
 import { parseDataUrl, toDataUrl, base64ByteLength } from "@/lib/image";
 import {
   MAX_IMAGE_BYTES,
@@ -105,8 +105,10 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("[generate] pipeline error:", err);
+    // Failed builds don't count against the daily allowance.
+    await refund(userId);
     return NextResponse.json(
-      { error: "Generation failed. Please try again." },
+      { error: "Generation failed. Please try again — this build wasn't counted." },
       { status: 500 }
     );
   }

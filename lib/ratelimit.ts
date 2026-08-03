@@ -52,6 +52,22 @@ export async function checkAndIncrement(userId: string): Promise<RateResult> {
   return { allowed: true, remaining: DAILY_LIMIT - next };
 }
 
+/**
+ * Give a build back — called when the generation pipeline fails after the
+ * count was taken, so failed builds don't burn the user's daily allowance.
+ * Best-effort: a refund that itself fails is only logged.
+ */
+export async function refund(userId: string): Promise<void> {
+  if (!isKvConfigured()) return;
+  try {
+    const key = todayKey(userId);
+    const next = await kv.decr(key);
+    if (next < 0) await kv.set(key, 0, { ex: TTL_SECONDS });
+  } catch (err) {
+    console.error("[ratelimit] refund failed:", err);
+  }
+}
+
 /** Read-only view of the user's usage for today. */
 export async function getUsage(userId: string): Promise<Usage> {
   if (!isKvConfigured()) {

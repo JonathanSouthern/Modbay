@@ -97,10 +97,32 @@ function renderPass(changes: string[]): string {
 }
 
 /**
+ * Ride height gets its own pass: it's the hardest edit class for image
+ * models, so it runs alone with explicit before/after geometry cues.
+ */
+function stancePass(stanceId: string, stanceLabel: string): string {
+  const geometry: Record<string, string> = {
+    lowered:
+      "the gap between the tires and the fenders must be visibly smaller and the whole body must sit noticeably lower over the wheels",
+    slammed:
+      "the gap between the tires and the fenders must be completely eliminated — wheels tucked into the arches, the body sitting dramatically lower, rocker panels nearly touching the ground",
+    lifted:
+      "the gap between the tires and the fenders must be visibly larger and the whole body must sit noticeably higher, with off-road ground clearance",
+  };
+  return [
+    "Edit this photo of a car. Recreate the exact same photo — same car, same camera angle, same background, same lighting — with exactly ONE change: the suspension and ride height.",
+    `Change: ${STANCE_PROMPTS[stanceId] ?? stanceLabel}.`,
+    `Compared to the original photo, ${geometry[stanceId] ?? "the ride height must look clearly different"}. This single change must be dramatic and unmistakable.`,
+    "Everything else stays identical to the original photo. The result must look like a real photograph.",
+  ].join("\n");
+}
+
+/**
  * Compose the editing instructions directly from the selections — no LLM
- * call. Changes are split into at most two sequential passes (body and
- * structure first, then glass/lights/extras): image models apply a short
- * focused list far more reliably than one long one.
+ * call. Changes are split into up to three sequential passes — body
+ * (paint, wheels, mods), then stance alone, then glass/lights/extras:
+ * image models apply a short focused list far more reliably than one
+ * long one, and ride height needs a pass to itself.
  */
 function templatePasses(options: ModOptions): string[] {
   // Pass 1 — body & structure: paint, wheels, stance, body mods.
@@ -125,11 +147,6 @@ function templatePasses(options: ModOptions): string[] {
       : "";
     body.push(
       `Wheels: completely replace the existing wheels with ${size}${style}aftermarket rims${color}. The new wheels must look clearly different from the current ones.`
-    );
-  }
-  if (options.stance) {
-    body.push(
-      `Ride height: ${STANCE_PROMPTS[options.stance.id] ?? options.stance.label}. The change in ride height must be obvious compared to the original photo.`
     );
   }
   for (const m of options.mods) {
@@ -157,7 +174,12 @@ function templatePasses(options: ModOptions): string[] {
     details.push(`Also: ${options.freeText.trim()}.`);
   }
 
-  return [body, details].filter((g) => g.length > 0).map(renderPass);
+  const rendered: string[] = [];
+  if (body.length > 0) rendered.push(renderPass(body));
+  if (options.stance)
+    rendered.push(stancePass(options.stance.id, options.stance.label));
+  if (details.length > 0) rendered.push(renderPass(details));
+  return rendered;
 }
 
 /**

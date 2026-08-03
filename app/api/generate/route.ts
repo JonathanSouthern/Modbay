@@ -13,7 +13,7 @@ import {
 } from "@/lib/mods";
 
 export const runtime = "nodejs";
-export const maxDuration = 120; // multi-pass builds run 2 sequential edits
+export const maxDuration = 180; // multi-pass builds run up to 3 sequential edits
 
 export async function POST(req: Request) {
   // 1. Auth (middleware also protects this, but double-check here).

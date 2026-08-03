@@ -84,7 +84,11 @@ export default function Stage({
   onError,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  // Natural dimensions of the loaded photo — the stage adapts its aspect
+  // ratio so portrait phone shots aren't letterboxed into a 16:10 bay.
+  const [imgDims, setImgDims] = useState<{ w: number; h: number } | null>(null);
   const dragDepth = useRef(0);
 
   const handleFile = useCallback(
@@ -145,6 +149,25 @@ export default function Stage({
   }, [handleFile]);
 
   const browse = useCallback(() => inputRef.current?.click(), []);
+  const openCamera = useCallback(() => cameraRef.current?.click(), []);
+
+  const onFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) handleFile(file);
+      e.target.value = "";
+    },
+    [handleFile]
+  );
+
+  // Empty bay keeps the 16:10 stage; a loaded photo drives the ratio.
+  // Width is capped so tall portrait shots stay within the viewport
+  // instead of scrolling (72vh tall at most).
+  const ratio = imageUrl && imgDims ? imgDims.w / imgDims.h : 1.6;
+  const stageStyle: React.CSSProperties = {
+    aspectRatio: String(ratio),
+    maxWidth: `min(100%, calc(72vh * ${ratio.toFixed(4)}))`,
+  };
 
   return (
     <div className="space-y-2.5">
@@ -164,7 +187,8 @@ export default function Stage({
 
       {/* The stage */}
       <div
-        className={`relative aspect-[16/10] w-full overflow-hidden rounded-lg border bg-stage transition-colors ${
+        style={stageStyle}
+        className={`relative mx-auto w-full overflow-hidden rounded-lg border bg-stage transition-colors ${
           dragging ? "border-accent" : "border-line"
         }`}
       >
@@ -178,20 +202,21 @@ export default function Stage({
           type="file"
           accept={ACCEPTED.join(",")}
           className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleFile(file);
-            e.target.value = "";
-          }}
+          onChange={onFileInput}
+        />
+        {/* Separate input with capture: opens the camera directly on phones */}
+        <input
+          ref={cameraRef}
+          type="file"
+          accept={ACCEPTED.join(",")}
+          capture="environment"
+          className="hidden"
+          onChange={onFileInput}
         />
 
         {!imageUrl ? (
           /* Empty bay — invitation to act */
-          <button
-            type="button"
-            onClick={browse}
-            className="group absolute inset-0 flex flex-col items-center justify-center gap-4 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent"
-          >
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <Corner className="left-3 top-3 border-l border-t" />
             <Corner className="right-3 top-3 border-r border-t" />
             <Corner className="bottom-3 left-3 border-b border-l" />
@@ -200,13 +225,41 @@ export default function Stage({
             <span className="font-display text-2xl font-semibold uppercase tracking-[0.14em] text-foreground">
               Drop your car photo
             </span>
-            <span className="rounded border border-line-strong px-4 py-2 text-sm font-medium text-muted transition group-hover:border-accent group-hover:text-foreground">
-              Browse files
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={browse}
+                className="rounded border border-line-strong px-4 py-2 text-sm font-medium text-muted transition hover:border-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                Browse files
+              </button>
+              {/* Only on touch devices, where a camera is likely */}
+              <button
+                type="button"
+                onClick={openCamera}
+                className="hidden rounded border border-line-strong px-4 py-2 text-sm font-medium text-muted transition hover:border-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent pointer-coarse:inline-flex pointer-coarse:items-center pointer-coarse:gap-2"
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                Take a photo
+              </button>
+            </div>
             <span className="font-mono text-[11px] tracking-wide text-muted">
               JPG · PNG · WEBP — up to 10MB
             </span>
-          </button>
+          </div>
         ) : resultUrl && !isLoading ? (
           /* Result — before/after reveal */
           <CompareSlider original={imageUrl} result={resultUrl} />
@@ -218,6 +271,12 @@ export default function Stage({
               alt="Your car"
               fill
               unoptimized
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                if (img.naturalWidth && img.naturalHeight) {
+                  setImgDims({ w: img.naturalWidth, h: img.naturalHeight });
+                }
+              }}
               className={`object-contain transition-opacity ${
                 isLoading ? "opacity-40" : "opacity-100"
               }`}

@@ -5,6 +5,18 @@ type Props = {
   limit: number;
 };
 
+/** Local time at which the daily counter rolls over (midnight UTC). */
+function resetTimeLocal(): string {
+  const now = new Date();
+  const nextUtcMidnight = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)
+  );
+  return nextUtcMidnight.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 /**
  * Fuel-gauge usage meter: one segment per build, drains as you use them.
  */
@@ -16,7 +28,7 @@ export default function UsageBadge({ remaining, limit }: Props) {
   return (
     <div
       className="flex items-center gap-2.5"
-      title="Free builds — resets daily"
+      title={`Free builds — resets daily at ${resetTimeLocal()} your time`}
     >
       <div className="flex items-end gap-[3px]" aria-hidden>
         {Array.from({ length: limit }, (_, i) => (
@@ -34,6 +46,7 @@ export default function UsageBadge({ remaining, limit }: Props) {
       </div>
       <span className="font-mono text-[11px] tracking-wide text-muted">
         {remaining}/{limit} builds left
+        {low && ` · resets ${resetTimeLocal()}`}
       </span>
     </div>
   );

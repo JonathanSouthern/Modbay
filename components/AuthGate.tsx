@@ -9,19 +9,26 @@ type Props = {
   onDismiss: () => void;
 };
 
-const COPY: Record<Variant, { title: string; body: string }> = {
-  signin: {
-    title: "Sign in to build",
-    body: "A free account gets you 10 builds a day. Your photo stays right here while you sign in.",
-  },
-  limit: {
-    title: "That's all 10 for today",
-    body: "Your free builds are used up. The counter resets tomorrow.",
-  },
-};
+function limitBody(): string {
+  const now = new Date();
+  const nextUtcMidnight = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)
+  );
+  const time = nextUtcMidnight.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `Your free builds are used up. The counter resets at ${time} your time.`;
+}
 
 export default function AuthGate({ variant, onDismiss }: Props) {
-  const { title, body } = COPY[variant];
+  const { title, body } =
+    variant === "signin"
+      ? {
+          title: "Sign in to build",
+          body: "A free account gets you 10 builds a day. Your photo stays right here while you sign in.",
+        }
+      : { title: "That's all 10 for today", body: limitBody() };
 
   return (
     <div

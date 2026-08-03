@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { saveBuild } from "@/lib/builds";
 import { auth } from "@clerk/nextjs/server";
-import { buildGeminiPrompt } from "@/lib/prompt";
+import { buildEditInstructions } from "@/lib/prompt";
 import { editCarImage } from "@/lib/gemini";
 import { checkAndIncrement, refund } from "@/lib/ratelimit";
 import { parseDataUrl, toDataUrl, base64ByteLength } from "@/lib/image";
@@ -13,7 +13,7 @@ import {
 } from "@/lib/mods";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120; // multi-pass builds run 2 sequential edits
 
 export async function POST(req: Request) {
   // 1. Auth (middleware also protects this, but double-check here).
@@ -97,9 +97,17 @@ export async function POST(req: Request) {
 
   // 4 & 5. Claude → editing prompt → Gemini → edited image.
   try {
-    const prompt = await buildGeminiPrompt(image, options);
-    console.log(`[generate] user=${userId} prompt: ${prompt}`);
-    const edited = await editCarImage(parsed.base64, parsed.mimeType, prompt);
+    const prompts = await buildEditInstructions(image, options);
+
+    // Apply each pass to the previous pass's output.
+    let edited = { base64: parsed.base64, mimeType: parsed.mimeType };
+    for (const [i, prompt] of prompts.entries()) {
+      console.log(
+        `[generate] user=${userId} pass ${i + 1}/${prompts.length} prompt: ${prompt}`
+      );
+      edited = await editCarImage(edited.base64, edited.mimeType, prompt);
+    }
+    const prompt = prompts.join("\n\n— next pass —\n\n");
 
     // Save to the user's garage after the response is sent — a storage
     // hiccup never fails a successful build.

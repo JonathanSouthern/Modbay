@@ -86,17 +86,34 @@ function describeSelections(options: ModOptions): string {
  * Compose the editing instruction directly from the selections — no LLM
  * call. Used when ANTHROPIC_API_KEY is not configured.
  */
-function templatePrompt(options: ModOptions): string {
-  const changes: string[] = [];
+/** Render one editing pass: a focused, numbered instruction. */
+function renderPass(changes: string[]): string {
+  const list = changes.map((c, i) => `${i + 1}. ${c}`).join("\n");
+  return [
+    "Edit this photo of a car. Recreate the exact same photo — same car, same camera angle, same background, same lighting — but with ALL of these changes applied:",
+    list,
+    "Every numbered change must be unmistakably visible in the result. Everything not listed stays identical to the original photo. The result must look like a real photograph.",
+  ].join("\n");
+}
+
+/**
+ * Compose the editing instructions directly from the selections — no LLM
+ * call. Changes are split into at most two sequential passes (body and
+ * structure first, then glass/lights/extras): image models apply a short
+ * focused list far more reliably than one long one.
+ */
+function templatePasses(options: ModOptions): string[] {
+  // Pass 1 — body & structure: paint, wheels, stance, body mods.
+  const body: string[] = [];
   if (options.color) {
     const finish = options.finish
       ? ` with a ${options.finish.label.toLowerCase()} finish`
       : "";
-    changes.push(
+    body.push(
       `Paint: repaint the entire car body ${options.color.name} (${options.color.hex})${finish}.`
     );
   } else if (options.finish) {
-    changes.push(
+    body.push(
       `Paint: change the paint to a ${options.finish.label.toLowerCase()} finish, keeping the current color.`
     );
   }
@@ -106,57 +123,55 @@ function templatePrompt(options: ModOptions): string {
     const color = options.rimColor
       ? ` finished in ${RIM_COLOR_PROMPTS[options.rimColor.id] ?? options.rimColor.label.toLowerCase()}`
       : "";
-    changes.push(
+    body.push(
       `Wheels: completely replace the existing wheels with ${size}${style}aftermarket rims${color}. The new wheels must look clearly different from the current ones.`
     );
   }
   if (options.stance) {
-    changes.push(
+    body.push(
       `Ride height: ${STANCE_PROMPTS[options.stance.id] ?? options.stance.label}. The change in ride height must be obvious compared to the original photo.`
     );
   }
+  for (const m of options.mods) {
+    body.push(`Body: ${MOD_PROMPTS[m] ?? m}.`);
+  }
+
+  // Pass 2 — glass, lights, extras.
+  const details: string[] = [];
   if (options.tint) {
-    changes.push(
+    details.push(
       `Windows: ${TINT_PROMPTS[options.tint.id] ?? options.tint.label.toLowerCase() + " window tint"}.`
     );
   }
   if (options.headlights) {
-    changes.push(
+    details.push(
       `Lights: ${HEADLIGHT_PROMPTS[options.headlights.id] ?? options.headlights.label}.`
     );
   }
   if (options.underglow) {
-    changes.push(
+    details.push(
       `Underglow: add ${options.underglow.label.toLowerCase()} (${options.underglow.hex}) neon underglow beneath the car, casting a visible glow on the ground.`
     );
   }
-  for (const m of options.mods) {
-    changes.push(`Body: ${MOD_PROMPTS[m] ?? m}.`);
-  }
   if (options.freeText.trim()) {
-    changes.push(`Also: ${options.freeText.trim()}.`);
+    details.push(`Also: ${options.freeText.trim()}.`);
   }
 
-  const list = changes.map((c, i) => `${i + 1}. ${c}`).join("\n");
-  return [
-    "Edit this photo of a car. Apply ALL of the following modifications — every numbered change must be clearly visible in the result, do not skip any:",
-    list,
-    "Keep the original camera angle, background, environment, lighting, and reflections. Do not change anything else about the scene. The result must look like a real photograph.",
-  ].join("\n");
+  return [body, details].filter((g) => g.length > 0).map(renderPass);
 }
 
 /**
- * Turn the car photo + selected mods into a single, precise image-editing
- * instruction for the downstream image model. Uses Claude to write a
- * photo-aware instruction when ANTHROPIC_API_KEY is set; otherwise falls
- * back to a deterministic template built from the selections.
+ * Turn the car photo + selected mods into a sequence of image-editing
+ * instructions, applied as passes (each pass edits the previous result).
+ * With ANTHROPIC_API_KEY set, Claude writes one photo-aware instruction;
+ * otherwise the deterministic template splits changes into focused passes.
  */
-export async function buildGeminiPrompt(
+export async function buildEditInstructions(
   image: string,
   options: ModOptions
-): Promise<string> {
+): Promise<string[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return templatePrompt(options);
+  if (!apiKey) return templatePasses(options);
 
   const { mimeType, base64 } = parseDataUrl(image);
   const client = new Anthropic({ apiKey });
@@ -199,5 +214,5 @@ export async function buildGeminiPrompt(
     .trim();
 
   if (!text) throw new Error("Claude returned an empty prompt");
-  return text;
+  return [text];
 }

@@ -21,8 +21,9 @@ type Gate = "signin" | "limit" | null;
 const LOADING_STAGES: { at: number; label: string }[] = [
   { at: 0, label: "Reading your photo" },
   { at: 4_000, label: "Writing the edit plan" },
-  { at: 10_000, label: "Applying your mods" },
-  { at: 20_000, label: "Rendering the final shot" },
+  { at: 10_000, label: "Applying body and stance" },
+  { at: 24_000, label: "Applying glass, lights, and details" },
+  { at: 40_000, label: "Rendering the final shot" },
 ];
 
 function specHasSelections(spec: ModOptions): boolean {

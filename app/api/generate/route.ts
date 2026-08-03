@@ -96,6 +96,7 @@ export async function POST(req: Request) {
   // 4 & 5. Claude → editing prompt → Gemini → edited image.
   try {
     const prompt = await buildGeminiPrompt(image, options);
+    console.log(`[generate] user=${userId} prompt: ${prompt}`);
     const edited = await editCarImage(parsed.base64, parsed.mimeType, prompt);
 
     // 6. Return the result + remaining count.

@@ -3,8 +3,10 @@
 AI-powered car customization. Upload a photo of your car, pick your mods (paint,
 rims, body kits, spoilers, tint…), and AI visualizes the build on your actual photo.
 
-**Pipeline:** upload → **Claude** turns your selections into a precise editing
-instruction → **Gemini** edits the photo → before/after result you can download.
+**Pipeline:** upload → your selections become a precise editing instruction
+(**Claude** writes it photo-aware when `ANTHROPIC_API_KEY` is set, otherwise a
+code template composes it) → **Gemini** edits the photo → before/after result
+you can download.
 
 ## Tech stack
 
@@ -14,7 +16,7 @@ instruction → **Gemini** edits the photo → before/after result you can downl
 | Styling | Tailwind CSS v4 |
 | Auth | Clerk |
 | Rate limiting | Vercel KV / Upstash Redis (10 builds/user/day) |
-| Prompt engineering | Anthropic Claude API |
+| Prompt engineering | Code template, or Anthropic Claude API when configured |
 | Image editing | Google Gemini API (`gemini-2.5-flash-image`) |
 | Hosting | Vercel |
 
@@ -42,8 +44,8 @@ cp .env.example .env.local
 
 | Variable | Where to get it |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | https://console.anthropic.com |
 | `GEMINI_API_KEY` | https://aistudio.google.com/app/apikey |
+| `ANTHROPIC_API_KEY` *(optional)* | https://console.anthropic.com — when set, Claude looks at the photo and writes a sharper edit instruction; without it, the app composes the instruction from your selections |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | https://dashboard.clerk.com |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Vercel → Storage → create a Redis (Upstash) store |
 

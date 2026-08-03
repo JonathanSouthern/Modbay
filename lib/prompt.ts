@@ -76,15 +76,74 @@ function describeSelections(options: ModOptions): string {
 }
 
 /**
- * Ask Claude to turn the car photo + selected mods into a single, precise
- * image-editing instruction for the downstream image model.
+ * Compose the editing instruction directly from the selections — no LLM
+ * call. Used when ANTHROPIC_API_KEY is not configured.
+ */
+function templatePrompt(options: ModOptions): string {
+  const sentences: string[] = ["Edit this photo of a car."];
+  if (options.color) {
+    const finish = options.finish
+      ? ` with a ${options.finish.label.toLowerCase()} finish`
+      : "";
+    sentences.push(
+      `Repaint the car ${options.color.name} (${options.color.hex})${finish}.`
+    );
+  } else if (options.finish) {
+    sentences.push(
+      `Change the paint to a ${options.finish.label.toLowerCase()} finish, keeping the current color.`
+    );
+  }
+  if (options.rim || options.rimColor || options.rimSize) {
+    const parts: string[] = [];
+    if (options.rimSize) parts.push(`${options.rimSize.id}-inch`);
+    if (options.rimColor) parts.push(options.rimColor.label.toLowerCase());
+    if (options.rim) parts.push(`${options.rim.label.toLowerCase()} style`);
+    sentences.push(`Replace the wheels with ${parts.join(" ")} rims.`);
+  }
+  if (options.stance) {
+    sentences.push(
+      `Adjust the stance: ${STANCE_PROMPTS[options.stance.id] ?? options.stance.label}.`
+    );
+  }
+  if (options.tint) {
+    sentences.push(
+      `Tint the side and rear windows to a ${options.tint.label.toLowerCase()} tint (${options.tint.vlt}% visible light transmission).`
+    );
+  }
+  if (options.headlights) {
+    sentences.push(
+      `Give the car ${HEADLIGHT_PROMPTS[options.headlights.id] ?? options.headlights.label}.`
+    );
+  }
+  if (options.underglow) {
+    sentences.push(
+      `Add ${options.underglow.label.toLowerCase()} (${options.underglow.hex}) neon underglow beneath the car, casting a soft glow on the ground.`
+    );
+  }
+  if (options.mods.length > 0) {
+    sentences.push(`Add these modifications: ${options.mods.join(", ")}.`);
+  }
+  if (options.freeText.trim()) {
+    sentences.push(`Additional request: ${options.freeText.trim()}.`);
+  }
+  sentences.push(
+    "Keep the original camera angle, background, environment, lighting, and reflections. Do not change anything else about the scene. The result must look like a real photograph."
+  );
+  return sentences.join(" ");
+}
+
+/**
+ * Turn the car photo + selected mods into a single, precise image-editing
+ * instruction for the downstream image model. Uses Claude to write a
+ * photo-aware instruction when ANTHROPIC_API_KEY is set; otherwise falls
+ * back to a deterministic template built from the selections.
  */
 export async function buildGeminiPrompt(
   image: string,
   options: ModOptions
 ): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  if (!apiKey) return templatePrompt(options);
 
   const { mimeType, base64 } = parseDataUrl(image);
   const client = new Anthropic({ apiKey });

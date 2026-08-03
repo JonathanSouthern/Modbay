@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
+  <defs>
+    <radialGradient id="stage" cx="50%" cy="45%" r="75%">
+      <stop offset="0%" stop-color="#16181c"/>
+      <stop offset="100%" stop-color="#0e0f11"/>
+    </radialGradient>
+    <linearGradient id="paint" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="55%" stop-color="#6d28d9"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#15161c"/>
+      <stop offset="100%" stop-color="#0b0d10"/>
+    </linearGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="22"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#stage)"/>
+  <g transform="translate(0 -110)">
+
+  <!-- ground shadow -->
+  <ellipse cx="800" cy="882" rx="560" ry="30" fill="#000" opacity="0.55" filter="url(#soft)"/>
+
+  <!-- neon underglow -->
+  <ellipse cx="800" cy="800" rx="470" ry="24" fill="#a855f7" opacity="0.85" filter="url(#glow)"/>
+  <ellipse cx="800" cy="850" rx="560" ry="26" fill="#a855f7" opacity="0.30" filter="url(#glow)"/>
+
+  <!-- wheels (fixed; bigger bronze rims) -->
+  <g>
+    <circle cx="470" cy="770" r="105" fill="#101215"/>
+    <circle cx="470" cy="770" r="100" fill="#191c20"/>
+    <circle cx="470" cy="770" r="70" fill="#1d1a14"/>
+    <g stroke="#8c6a3f" stroke-width="12" stroke-linecap="round">
+      <line x1="470" y1="770" x2="470" y2="708"/>
+      <line x1="470" y1="770" x2="529" y2="751"/>
+      <line x1="470" y1="770" x2="506" y2="820"/>
+      <line x1="470" y1="770" x2="434" y2="820"/>
+      <line x1="470" y1="770" x2="411" y2="751"/>
+    </g>
+    <circle cx="470" cy="770" r="17" fill="#b08b52"/>
+
+    <circle cx="1140" cy="770" r="105" fill="#101215"/>
+    <circle cx="1140" cy="770" r="100" fill="#191c20"/>
+    <circle cx="1140" cy="770" r="70" fill="#1d1a14"/>
+    <g stroke="#8c6a3f" stroke-width="12" stroke-linecap="round">
+      <line x1="1140" y1="770" x2="1140" y2="708"/>
+      <line x1="1140" y1="770" x2="1199" y2="751"/>
+      <line x1="1140" y1="770" x2="1176" y2="820"/>
+      <line x1="1140" y1="770" x2="1104" y2="820"/>
+      <line x1="1140" y1="770" x2="1081" y2="751"/>
+    </g>
+    <circle cx="1140" cy="770" r="17" fill="#b08b52"/>
+  </g>
+
+  <!-- body (slammed: dropped 26px over the same wheels) -->
+  <g transform="translate(0 26)">
+    <path fill="url(#paint)" d="
+      M 262 735
+      L 360 735
+      A 115 115 0 0 1 580 735
+      L 1030 735
+      A 115 115 0 0 1 1250 735
+      L 1356 735
+      C 1392 733 1400 706 1398 684
+      C 1396 646 1372 628 1332 620
+      L 1244 606
+      C 1156 592 1102 586 1032 584
+      C 992 540 942 506 872 496
+      L 702 493
+      C 642 495 592 521 562 546
+      C 522 581 482 596 422 603
+      L 332 611
+      C 287 617 263 652 262 692
+      Z"/>
+    <!-- pearl highlight -->
+    <path fill="#ffffff" opacity="0.14" d="
+      M 702 493 L 872 496 C 942 506 992 540 1032 584
+      C 900 578 700 576 585 572 C 610 535 650 515 702 493 Z"/>
+
+    <!-- ducktail spoiler -->
+    <path fill="#3b1580" d="M 336 606 L 314 566 C 330 557 354 555 376 561 L 424 594 Z"/>
+
+    <!-- greenhouse (limo tint) -->
+    <path fill="url(#glass)" d="
+      M 588 570 C 615 536 656 514 704 508
+      L 856 512 C 898 526 928 549 950 576 Z"/>
+    <!-- b-pillar -->
+    <rect x="770" y="508" width="14" height="66" fill="#4c1d95" transform="skewX(-8)"/>
+
+    <!-- door seam + handle -->
+    <path d="M 952 590 C 950 640 946 690 940 732" stroke="#2e1065" stroke-width="4" fill="none" opacity="0.8"/>
+    <rect x="880" y="632" width="56" height="12" rx="6" fill="#2e1065"/>
+
+    <!-- mirror -->
+    <path fill="#4c1d95" d="M 952 560 l 26 -14 14 10 -12 20 z"/>
+
+    <!-- headlight -->
+    <path fill="#e8ecf2" opacity="0.95" d="M 1336 624 L 1392 646 C 1394 656 1390 664 1382 666 L 1318 650 Z"/>
+    <!-- taillight -->
+    <path fill="#e5484d" d="M 264 648 L 320 640 L 322 664 L 264 670 Z"/>
+
+    <!-- sill line -->
+    <path d="M 600 728 L 1010 728" stroke="#2e1065" stroke-width="5" opacity="0.7"/>
+  </g>
+  </g>
+</svg>

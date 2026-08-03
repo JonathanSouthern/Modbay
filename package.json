@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.112.3",
     "@clerk/nextjs": "^7.5.20",
     "@google/genai": "^2.12.0",
+    "@vercel/blob": "^2.6.1",
     "@vercel/kv": "^3.0.0",
     "next": "16.2.10",
     "react": "19.2.4",

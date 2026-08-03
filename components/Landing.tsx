@@ -113,7 +113,8 @@ export default function Landing() {
           </button>
         </SignUpButton>
         <p className="mt-3 font-mono text-[11px] text-muted">
-          Photos are processed by AI to render your build and aren&apos;t stored.
+          Your photo is processed by AI to render the build. Results are saved
+          to your private garage — original photos aren&apos;t kept.
         </p>
       </div>
     </div>

@@ -314,7 +314,14 @@ export default function Stage({
       {resultUrl && !isLoading && (
         <div className="flex items-center justify-between gap-3">
           <p className="font-mono text-[11px] text-muted">
-            Builds aren&apos;t stored — download to keep this one.
+            Saved to{" "}
+            <a
+              href="/garage"
+              className="text-accent transition hover:underline"
+            >
+              your garage
+            </a>
+            .
           </p>
           <a
             href={resultUrl}

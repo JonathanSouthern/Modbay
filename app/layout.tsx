@@ -82,6 +82,12 @@ export default function RootLayout({
                   </SignUpButton>
                 </Show>
                 <Show when="signed-in">
+                  <Link
+                    href="/garage"
+                    className="rounded px-3 py-1.5 text-sm font-medium text-muted transition hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    Garage
+                  </Link>
                   <UserButton
                     appearance={{ elements: { avatarBox: "h-8 w-8" } }}
                   />

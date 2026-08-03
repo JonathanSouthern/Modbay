@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { after } from "next/server";
+import { saveBuild } from "@/lib/builds";
 import { auth } from "@clerk/nextjs/server";
 import { buildGeminiPrompt } from "@/lib/prompt";
 import { editCarImage } from "@/lib/gemini";
@@ -98,6 +100,21 @@ export async function POST(req: Request) {
     const prompt = await buildGeminiPrompt(image, options);
     console.log(`[generate] user=${userId} prompt: ${prompt}`);
     const edited = await editCarImage(parsed.base64, parsed.mimeType, prompt);
+
+    // Save to the user's garage after the response is sent — a storage
+    // hiccup never fails a successful build.
+    after(async () => {
+      try {
+        await saveBuild(userId, {
+          imageBase64: edited.base64,
+          mimeType: edited.mimeType,
+          prompt,
+          options,
+        });
+      } catch (err) {
+        console.error("[generate] failed to save build to garage:", err);
+      }
+    });
 
     // 6. Return the result + remaining count.
     return NextResponse.json({

@@ -48,6 +48,7 @@ cp .env.example .env.local
 | `ANTHROPIC_API_KEY` *(optional)* | https://console.anthropic.com — when set, Claude looks at the photo and writes a sharper edit instruction; without it, the app composes the instruction from your selections |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | https://dashboard.clerk.com |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Vercel → Storage → create a Redis (Upstash) store |
+| `BLOB_READ_WRITE_TOKEN` | auto-set by `vercel blob create-store` — powers the garage (saved builds) |
 
 `.env.local` is **gitignored** and must never be committed. Only `.env.example`
 (placeholders, no secrets) is tracked. See [Secrets & git](#secrets--git) below.
